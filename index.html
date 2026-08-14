@@ -244,8 +244,10 @@ a:focus-visible, button:focus-visible{
 .nav-links a{
   position: relative;
   padding-bottom: 2px;
-  transition: translate var(--dur-hover) var(--ease);
+  transition: translate var(--dur-hover) var(--ease), text-shadow var(--dur-s) var(--ease), scale var(--dur-s) var(--ease);
 }
+.nav-links a:hover{ text-shadow: 0 0 16px rgba(155, 113, 178, .45); }
+.nav-links a:active{ scale: .96; }
 .nav-links a::after{
   content: "";
   position: absolute;
@@ -383,14 +385,16 @@ a:focus-visible, button:focus-visible{
   padding: 1rem 1.6rem;
   border: 1px solid var(--line-strong);
   border-radius: 999px;
-  transition: background var(--dur-s) var(--ease), color var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease), transform var(--dur-s) var(--ease), translate var(--dur-hover) var(--ease);
+  transition: background var(--dur-s) var(--ease), color var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease), transform var(--dur-s) var(--ease), translate var(--dur-hover) var(--ease), scale var(--dur-s) var(--ease), box-shadow var(--dur-s) var(--ease);
 }
 .btn-ghost:hover{
   background: var(--accent);
   border-color: var(--accent);
   color: #0A0A0A;
   transform: translateY(-2px);
+  box-shadow: 0 8px 28px -10px rgba(155, 113, 178, .55);
 }
+.btn-ghost:active{ scale: .97; }
 .arrow-down{ transition: transform var(--dur-s) var(--ease); }
 .btn-ghost:hover .arrow-down{ transform: translateY(3px); }
 
@@ -547,13 +551,15 @@ a:focus-visible, button:focus-visible{
   color: var(--ink);
   border-bottom: 1px solid var(--line-strong);
   padding-bottom: 3px;
-  transition: color var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease), gap var(--dur-s) var(--ease), translate var(--dur-hover) var(--ease);
+  transition: color var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease), gap var(--dur-s) var(--ease), translate var(--dur-hover) var(--ease), text-shadow var(--dur-s) var(--ease), scale var(--dur-s) var(--ease);
 }
 .project-link:hover{
   color: var(--accent);
   border-color: var(--accent);
   gap: .8rem;
+  text-shadow: 0 0 16px rgba(155, 113, 178, .4);
 }
+.project-link:active{ scale: .97; }
 
 .project-preview{
   position: relative;
@@ -565,6 +571,10 @@ a:focus-visible, button:focus-visible{
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: box-shadow var(--dur-hover) var(--ease);
+}
+.project-card:hover .project-preview{
+  box-shadow: 0 0 0 1px rgba(155, 113, 178, .25), 0 20px 40px -20px rgba(155, 113, 178, .35);
 }
 .project-preview::before{
   content: attr(data-tag);
@@ -717,9 +727,10 @@ a:focus-visible, button:focus-visible{
   color: var(--muted);
   border-bottom: 1px solid var(--line-strong);
   padding-bottom: 2px;
-  transition: color var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease), translate var(--dur-hover) var(--ease);
+  transition: color var(--dur-s) var(--ease), border-color var(--dur-s) var(--ease), translate var(--dur-hover) var(--ease), text-shadow var(--dur-s) var(--ease), scale var(--dur-s) var(--ease);
 }
-.about-category-archive:hover{ color: var(--accent); border-color: var(--accent); }
+.about-category-archive:hover{ color: var(--accent); border-color: var(--accent); text-shadow: 0 0 16px rgba(155, 113, 178, .4); }
+.about-category-archive:active{ scale: .97; }
 
 /* Self-assessment — an editorial data strip, not a résumé skill card:
    name and percentage on one line, a thin accent-filled rule beneath. */
@@ -851,9 +862,10 @@ a:focus-visible, button:focus-visible{
   font-weight: 600;
   font-size: clamp(1.4rem, 3.5vw, 2.1rem);
   text-transform: uppercase;
-  transition: color var(--dur-s) var(--ease), padding-left var(--dur-s) var(--ease), translate var(--dur-hover) var(--ease);
+  transition: color var(--dur-s) var(--ease), padding-left var(--dur-s) var(--ease), translate var(--dur-hover) var(--ease), text-shadow var(--dur-s) var(--ease), scale var(--dur-s) var(--ease);
 }
-.social-link:hover{ color: var(--accent); padding-left: .5rem; }
+.social-link:hover{ color: var(--accent); padding-left: .5rem; text-shadow: 0 0 20px rgba(155, 113, 178, .4); }
+.social-link:active{ scale: .985; }
 .social-link .arrow{
   font-family: var(--f-mono);
   font-size: 1.2rem;
@@ -871,8 +883,9 @@ a:focus-visible, button:focus-visible{
 /* Placeholder items (no real URL yet) render as inert spans, not links —
    no hover affordance, since there's nowhere for them to go. */
 span.social-link{ cursor: default; }
-span.social-link:hover{ color: inherit; padding-left: 0; }
+span.social-link:hover{ color: inherit; padding-left: 0; text-shadow: none; }
 span.social-link:hover .arrow{ transform: none; }
+span.social-link:active{ scale: 1; }
 
 .social-soon{
   font-family: var(--f-mono);
@@ -1529,21 +1542,23 @@ const SELF_ASSESSMENT = [
     targets.forEach((el) => el.classList.add("pre-reveal"));
     document.querySelectorAll(".skill-bar-fill").forEach((el) => el.classList.add("pre-fill"));
 
+    function revealElement(el) {
+      el.classList.remove("pre-reveal");
+      el.classList.add("is-visible");
+
+      if (el.classList.contains("skill-row")) {
+        const fill = el.querySelector(".skill-bar-fill");
+        if (fill) fill.classList.remove("pre-fill");
+        animateSkillNumber(el);
+      }
+
+      io.unobserve(el);
+    }
+
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            entry.target.classList.remove("pre-reveal");
-            entry.target.classList.add("is-visible");
-
-            if (entry.target.classList.contains("skill-row")) {
-              const fill = entry.target.querySelector(".skill-bar-fill");
-              if (fill) fill.classList.remove("pre-fill");
-              animateSkillNumber(entry.target);
-            }
-
-            io.unobserve(entry.target);
-          }
+          if (entry.isIntersecting) revealElement(entry.target);
         });
       },
       { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
@@ -1561,6 +1576,35 @@ const SELF_ASSESSMENT = [
     if (heroMeta) heroMeta.style.transitionDelay = "620ms";
     const heroCta = document.querySelector(".hero .btn-ghost");
     if (heroCta) heroCta.style.transitionDelay = "650ms";
+
+    /* Mobile safety net: on some phones, the browser's address bar
+       collapsing/expanding right after load shifts the viewport height,
+       so the observer's very first check can run before layout has
+       settled — the hero, genuinely on screen, can be measured as "not
+       yet intersecting" and never get a second chance until the user
+       scrolls. This doesn't reimplement the observer or duplicate its
+       logic; it reuses the same revealElement function and just
+       double-checks, once, after two animation frames (layout has
+       settled by then).
+
+       Scoped to the hero only, on purpose: that's the one place this
+       viewport-resize timing issue actually happens (a full-height
+       section evaluated before the browser chrome settles). A page-wide
+       sweep would also catch whatever else that same resize happens to
+       expose below the fold — on mobile specifically, since desktop
+       doesn't resize like this — revealing it instantly instead of on
+       scroll like everywhere else. That's not a rescue, it's a second,
+       inconsistent reveal path, so it stays scoped to where the real
+       bug is. */
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        document.querySelectorAll(".hero .pre-reveal").forEach((el) => {
+          const rect = el.getBoundingClientRect();
+          const inView = rect.top < window.innerHeight && rect.bottom > 0;
+          if (inView) revealElement(el);
+        });
+      });
+    });
   }
   try {
     setupReveal();
