@@ -144,6 +144,152 @@ a:focus-visible, button:focus-visible{
 .section-head{ margin-bottom: clamp(3rem, 6vw, 5rem); }
 
 /* =========================================================================
+   ATMOSPHERIC BACKGROUND
+   ========================================================================= */
+.atmosphere{
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+.atmosphere::before,
+.atmosphere::after{
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.08;
+  will-change: transform, opacity;
+}
+.atmosphere::before{
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  top: 10%;
+  left: -10%;
+  animation: atmosphere-drift-1 18s ease-in-out infinite;
+}
+.atmosphere::after{
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, var(--accent-soft) 0%, transparent 70%);
+  bottom: 15%;
+  right: -5%;
+  animation: atmosphere-drift-2 16s ease-in-out infinite;
+}
+
+@keyframes atmosphere-drift-1{
+  0%, 100%{
+    transform: translate(0, 0) scale(1);
+    opacity: 0.08;
+  }
+  25%{
+    transform: translate(15vw, 10vh) scale(1.1);
+    opacity: 0.12;
+  }
+  50%{
+    transform: translate(25vw, -5vh) scale(0.95);
+    opacity: 0.06;
+  }
+  75%{
+    transform: translate(10vw, 15vh) scale(1.05);
+    opacity: 0.1;
+  }
+}
+
+@keyframes atmosphere-drift-2{
+  0%, 100%{
+    transform: translate(0, 0) scale(1);
+    opacity: 0.08;
+  }
+  30%{
+    transform: translate(-12vw, -8vh) scale(1.08);
+    opacity: 0.1;
+  }
+  60%{
+    transform: translate(-20vw, 5vh) scale(0.92);
+    opacity: 0.06;
+  }
+  85%{
+    transform: translate(-8vw, -12vh) scale(1.02);
+    opacity: 0.09;
+  }
+}
+
+/* Mobile optimization: smaller, less movement to prevent overflow */
+@media (max-width: 1024px){
+  .atmosphere::before{
+    width: 400px;
+    height: 400px;
+    filter: blur(90px);
+    opacity: 0.06;
+  }
+  .atmosphere::after{
+    width: 350px;
+    height: 350px;
+    filter: blur(80px);
+    opacity: 0.06;
+  }
+  
+  @keyframes atmosphere-drift-1{
+    0%, 100%{
+      transform: translate(0, 0) scale(1);
+      opacity: 0.06;
+    }
+    25%{
+      transform: translate(8vw, 8vh) scale(1.05);
+      opacity: 0.08;
+    }
+    50%{
+      transform: translate(12vw, -3vh) scale(0.98);
+      opacity: 0.05;
+    }
+    75%{
+      transform: translate(5vw, 10vh) scale(1.02);
+      opacity: 0.07;
+    }
+  }
+  
+  @keyframes atmosphere-drift-2{
+    0%, 100%{
+      transform: translate(0, 0) scale(1);
+      opacity: 0.06;
+    }
+    30%{
+      transform: translate(-8vw, -5vh) scale(1.04);
+      opacity: 0.07;
+    }
+    60%{
+      transform: translate(-10vw, 3vh) scale(0.96);
+      opacity: 0.05;
+    }
+    85%{
+      transform: translate(-5vw, -8vh) scale(1.01);
+      opacity: 0.065;
+    }
+  }
+}
+
+/* Reduced motion: static atmospheric glow, no movement */
+@media (prefers-reduced-motion: reduce){
+  .atmosphere::before,
+  .atmosphere::after{
+    animation: none !important;
+  }
+  .atmosphere::before{
+    transform: translate(20vw, 5vh);
+    opacity: 0.06;
+  }
+  .atmosphere::after{
+    transform: translate(-15vw, -3vh);
+    opacity: 0.06;
+  }
+}
+
+/* =========================================================================
    GRAIN
    ========================================================================= */
 .grain{
@@ -626,6 +772,162 @@ a:focus-visible, button:focus-visible{
 .project-card.tone-lab .project-title{ color: var(--ink); }
 
 /* =========================================================================
+   PREMIUM GLASS PROJECT CARDS
+   ========================================================================= */
+.project-card{
+  position: relative;
+  background: rgba(17, 17, 17, 0.35);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(155, 113, 178, 0.12);
+  border-radius: 8px;
+  padding: clamp(2rem, 4vw, 3rem);
+  margin-bottom: clamp(1.25rem, 3vw, 2rem);
+  isolation: isolate;
+}
+
+/* Subtle internal highlight for premium depth */
+.project-card::before{
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, 
+    transparent 0%, 
+    rgba(155, 113, 178, 0.2) 20%, 
+    rgba(155, 113, 178, 0.3) 50%, 
+    rgba(155, 113, 178, 0.2) 80%, 
+    transparent 100%
+  );
+  border-radius: 8px 8px 0 0;
+  pointer-events: none;
+}
+
+/* Enhanced hover for glass cards */
+.project-card:hover{
+  translate: 0 -2px;
+  scale: 1.005;
+  border-color: rgba(155, 113, 178, 0.24);
+  background: rgba(17, 17, 17, 0.45);
+  box-shadow: 
+    0 0 0 1px rgba(155, 113, 178, 0.15),
+    0 12px 32px -12px rgba(155, 113, 178, 0.25),
+    0 0 60px -20px rgba(155, 113, 178, 0.08);
+}
+
+/* Preserve existing border-top behavior but integrate with glass */
+.project-card{
+  border-top: none;
+}
+
+/* Mobile optimization: reduce glass intensity */
+@media (max-width: 1024px){
+  .project-card{
+    background: rgba(17, 17, 17, 0.25);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  .project-card:hover{
+    background: rgba(17, 17, 17, 0.35);
+  }
+}
+
+/* Reduced motion: static glass surface, no movement */
+@media (prefers-reduced-motion: reduce){
+  .project-card:hover{
+    translate: none;
+    scale: none;
+  }
+}
+
+/* =========================================================================
+   NEXUS SPEED MASKED PREVIEW REVEAL
+   ========================================================================= */
+
+/* Target ONLY the NEXUS Speed preview using data-tag attribute */
+.project-preview[data-tag="NEXUS Speed"]{
+  overflow: hidden;
+}
+
+/* At rest: preview slightly clipped from bottom with reduced opacity */
+.project-preview[data-tag="NEXUS Speed"]::before{
+  clip-path: inset(0 0 18% 0);
+  opacity: 0.85;
+  transition: clip-path 680ms cubic-bezier(.22,.68,.36,.99), 
+              opacity 680ms cubic-bezier(.22,.68,.36,.99),
+              transform var(--dur-m) var(--ease), 
+              color var(--dur-m) var(--ease);
+}
+
+/* On hover: mask opens fully, preview settles into place */
+.project-card:hover .project-preview[data-tag="NEXUS Speed"]::before{
+  clip-path: inset(0 0 0 0);
+  opacity: 1;
+  color: var(--accent-dim);
+  transform: scale(1.04) translateY(0);
+}
+
+/* Additional refinement: preview-label fades in as mask opens */
+.project-preview[data-tag="NEXUS Speed"] .preview-label{
+  opacity: 0.7;
+  transform: translateY(4px);
+  transition: opacity 640ms cubic-bezier(.22,.68,.36,.99) 100ms,
+              transform 640ms cubic-bezier(.22,.68,.36,.99) 100ms;
+}
+
+.project-card:hover .project-preview[data-tag="NEXUS Speed"] .preview-label{
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Reduced motion: disable mask animation, show stable state */
+@media (prefers-reduced-motion: reduce){
+  .project-preview[data-tag="NEXUS Speed"]::before{
+    clip-path: inset(0 0 0 0) !important;
+    opacity: 1 !important;
+    transition: none !important;
+  }
+  .project-preview[data-tag="NEXUS Speed"] .preview-label{
+    opacity: 1 !important;
+    transform: translateY(0) !important;
+    transition: none !important;
+  }
+}
+
+/* Mobile: disable hover-dependent behavior, show stable preview */
+@media (hover: none) and (pointer: coarse){
+  .project-preview[data-tag="NEXUS Speed"]::before{
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+  .project-preview[data-tag="NEXUS Speed"] .preview-label{
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* =========================================================================
+   EDITORIAL PAGE TRANSITION
+   ========================================================================= */
+body.is-transitioning{
+  opacity: 0.88;
+  transform: translateY(-3px);
+  transition: opacity 300ms cubic-bezier(.22,.61,.36,1), 
+              transform 300ms cubic-bezier(.22,.61,.36,1);
+}
+
+/* Reduced motion: disable page transition */
+@media (prefers-reduced-motion: reduce){
+  body.is-transitioning{
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+/* =========================================================================
    ABOUT
    ========================================================================= */
 .about-lede{
@@ -975,6 +1277,9 @@ span.social-link:active{ scale: 1; }
 <body>
 
 <a class="skip-link" href="#main">Skip to content</a>
+
+<!-- atmospheric background -->
+<div class="atmosphere" aria-hidden="true"></div>
 
 <!-- grain overlay -->
 <svg class="grain" aria-hidden="true">
@@ -1741,13 +2046,16 @@ const SELF_ASSESSMENT = [
      Desktop + motion-allowed only, matching the same gate the custom
      cursor and hero parallax already use.
      ======================================================================= */
+  /* =======================================================================
+     REFINED MAGNETIC INTERACTION
+     ======================================================================= */
   function setupMagnetic() {
     if (!finePointer || reduceMotion) return;
 
     const targets = document.querySelectorAll(
       ".nav-links a, .btn-ghost, .project-link, a.social-link, .about-category-archive"
     );
-    const maxMove = 5; // px — small, per spec (2-6px)
+    const maxMove = 3; // reduced from 5px to 3px for subtler movement
 
     targets.forEach((el) => {
       el.addEventListener("mousemove", (e) => {
@@ -1755,9 +2063,11 @@ const SELF_ASSESSMENT = [
         const relX = (e.clientX - rect.left) / rect.width - 0.5;
         const relY = (e.clientY - rect.top) / rect.height - 0.5;
         el.style.translate = `${relX * maxMove * 2}px ${relY * maxMove * 2}px`;
+        el.style.scale = "1.008"; // tiny scale response
       });
       el.addEventListener("mouseleave", () => {
         el.style.translate = "0 0";
+        el.style.scale = "1";
       });
     });
   }
@@ -1766,6 +2076,52 @@ const SELF_ASSESSMENT = [
   } catch (err) {
     console.error("[aasif] magnetic links setup failed:", err);
   }
+  /* ======================================================================= 
+     END REFINED MAGNETIC INTERACTION
+     ======================================================================= */
+
+  /* =======================================================================
+     EDITORIAL PAGE TRANSITION
+     ======================================================================= */
+  function setupPageTransition() {
+    if (reduceMotion) return; // respect reduced motion preference
+
+    // Target project links and preview links (external navigation)
+    const externalLinks = document.querySelectorAll(
+      '.project-link[target="_blank"], .project-preview[target="_blank"], a.social-link[target="_blank"]'
+    );
+
+    externalLinks.forEach((link) => {
+      link.addEventListener("click", (e) => {
+        // Only intercept if it's a real external link (not # or empty)
+        const href = link.getAttribute("href");
+        if (!href || href === "#" || href.startsWith("#")) return;
+
+        // Prevent default navigation
+        e.preventDefault();
+
+        // Add transition class
+        document.body.classList.add("is-transitioning");
+
+        // Navigate after short delay
+        setTimeout(() => {
+          window.open(href, "_blank", "noopener,noreferrer");
+          // Remove transition class after navigation
+          setTimeout(() => {
+            document.body.classList.remove("is-transitioning");
+          }, 100);
+        }, 300); // 300ms matches CSS transition duration
+      });
+    });
+  }
+  try {
+    setupPageTransition();
+  } catch (err) {
+    console.error("[aasif] page transition setup failed:", err);
+  }
+  /* ======================================================================= 
+     END EDITORIAL PAGE TRANSITION
+     ======================================================================= */
 })();
 </script>
 </body>
