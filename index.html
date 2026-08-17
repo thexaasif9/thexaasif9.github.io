@@ -17,18 +17,18 @@
    ========================================================================= */
 :root{
   --bg:            #0A0A0A;
-  --bg-soft:       #111111;
+  --bg-soft:       #131313;
   --bg-raise:      color-mix(in srgb, #0A0A0A 88%, #3A1C36 12%);
   --ink:           #F2EFE8;
-  --muted:         #8F8C86;
-  --muted-dim:     #5C5A55;
+  --muted:         #9A9791;
+  --muted-dim:     #6A6862;
   --accent:        #9B71B2; /* Amethyst — primary interactive purple */
   --accent-soft:   #E3D0EA; /* Thistle — soft secondary purple, small details */
   --accent-highlight: #FBF1FF; /* Pale Orchid — very subtle highlight */
   --accent-deep:   #3A1C36; /* Dark Purple — deep atmospheric surface tint */
   --accent-dim:    rgba(155, 113, 178, 0.14);
-  --line:          rgba(242,239,232,0.09);
-  --line-strong:   rgba(242,239,232,0.16);
+  --line:          rgba(242,239,232,0.12);
+  --line-strong:   rgba(242,239,232,0.22);
 
   --f-display: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif;
   --f-body:    "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
@@ -363,9 +363,9 @@ a:focus-visible, button:focus-visible{
 }
 .nav.is-scrolled{
   padding-block: 1rem;
-  background: rgba(10,10,10,.72);
+  background: rgba(10,10,10,.78);
   backdrop-filter: blur(10px);
-  border-color: var(--line);
+  border-color: rgba(242,239,232,0.13);
 }
 .nav-inner{
   display: flex;
@@ -711,7 +711,7 @@ a:focus-visible, button:focus-visible{
   position: relative;
   aspect-ratio: 4 / 3;
   border-radius: 6px;
-  border: 1px solid var(--line);
+  border: 1px solid rgba(242,239,232,0.14);
   background: var(--bg-raise);
   overflow: hidden;
   display: flex;
@@ -732,7 +732,7 @@ a:focus-visible, button:focus-visible{
   font-family: var(--f-display);
   font-weight: 700;
   font-size: clamp(2.4rem, 7vw, 4.2rem);
-  color: var(--line-strong);
+  color: rgba(242,239,232,0.18);
   text-transform: uppercase;
   letter-spacing: -.02em;
   text-align: center;
@@ -758,16 +758,16 @@ a:focus-visible, button:focus-visible{
   font-family: var(--f-mono);
   font-size: .68rem;
   letter-spacing: .1em;
-  color: var(--muted);
+  color: rgba(154, 151, 145, 0.85);
   z-index: 2;
 }
 
 /* lab tone variant */
 .project-card.tone-lab .project-preview{
   background: color-mix(in srgb, #050403 94%, var(--accent-deep) 6%);
-  border-color: rgba(155, 113, 178, .22);
+  border-color: rgba(155, 113, 178, .26);
 }
-.project-card.tone-lab .project-preview::before{ color: rgba(155, 113, 178, .16); }
+.project-card.tone-lab .project-preview::before{ color: rgba(155, 113, 178, .20); }
 .project-card.tone-lab .project-index{ color: var(--ink); }
 .project-card.tone-lab .project-title{ color: var(--ink); }
 
@@ -776,10 +776,10 @@ a:focus-visible, button:focus-visible{
    ========================================================================= */
 .project-card{
   position: relative;
-  background: rgba(17, 17, 17, 0.35);
+  background: rgba(17, 17, 17, 0.45);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(155, 113, 178, 0.12);
+  border: 1px solid rgba(155, 113, 178, 0.16);
   border-radius: 8px;
   padding: clamp(2rem, 4vw, 3rem);
   margin-bottom: clamp(1.25rem, 3vw, 2rem);
@@ -796,9 +796,9 @@ a:focus-visible, button:focus-visible{
   height: 1px;
   background: linear-gradient(90deg, 
     transparent 0%, 
-    rgba(155, 113, 178, 0.2) 20%, 
-    rgba(155, 113, 178, 0.3) 50%, 
-    rgba(155, 113, 178, 0.2) 80%, 
+    rgba(155, 113, 178, 0.25) 20%, 
+    rgba(155, 113, 178, 0.35) 50%, 
+    rgba(155, 113, 178, 0.25) 80%, 
     transparent 100%
   );
   border-radius: 8px 8px 0 0;
@@ -809,12 +809,25 @@ a:focus-visible, button:focus-visible{
 .project-card:hover{
   translate: 0 -2px;
   scale: 1.005;
-  border-color: rgba(155, 113, 178, 0.24);
-  background: rgba(17, 17, 17, 0.45);
+  border-color: rgba(155, 113, 178, 0.28);
+  background: rgba(17, 17, 17, 0.55);
   box-shadow: 
-    0 0 0 1px rgba(155, 113, 178, 0.15),
+    0 0 0 1px rgba(155, 113, 178, 0.18),
     0 12px 32px -12px rgba(155, 113, 178, 0.25),
     0 0 60px -20px rgba(155, 113, 178, 0.08);
+}
+
+/* Viewport-triggered ambient glow for visible cards — reuses existing glow style */
+.project-card.is-in-view{
+  border-color: rgba(155, 113, 178, 0.28);
+  background: rgba(17, 17, 17, 0.55);
+  box-shadow: 
+    0 0 0 1px rgba(155, 113, 178, 0.18),
+    0 12px 32px -12px rgba(155, 113, 178, 0.25),
+    0 0 60px -20px rgba(155, 113, 178, 0.08);
+  transition: border-color var(--dur-m) var(--ease), 
+              background var(--dur-m) var(--ease),
+              box-shadow var(--dur-m) var(--ease);
 }
 
 /* Preserve existing border-top behavior but integrate with glass */
@@ -825,12 +838,12 @@ a:focus-visible, button:focus-visible{
 /* Mobile optimization: reduce glass intensity */
 @media (max-width: 1024px){
   .project-card{
-    background: rgba(17, 17, 17, 0.25);
+    background: rgba(17, 17, 17, 0.35);
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
   .project-card:hover{
-    background: rgba(17, 17, 17, 0.35);
+    background: rgba(17, 17, 17, 0.45);
   }
 }
 
@@ -839,6 +852,9 @@ a:focus-visible, button:focus-visible{
   .project-card:hover{
     translate: none;
     scale: none;
+  }
+  .project-card.is-in-view{
+    transition: none; /* No animated glow transition for reduced-motion users */
   }
 }
 
@@ -1174,13 +1190,6 @@ body.is-transitioning{
   transition: transform var(--dur-s) var(--ease);
 }
 .social-link:hover .arrow{ transform: translate(3px, -3px); }
-
-/* Email address: keep it in natural case and a touch smaller — an
-   all-caps display-size email is hard to read and prone to wrapping. */
-.social-link.is-email{
-  text-transform: none;
-  font-size: clamp(1.05rem, 2.6vw, 1.5rem);
-}
 
 /* Placeholder items (no real URL yet) render as inert spans, not links —
    no hover affordance, since there's nowhere for them to go. */
@@ -1551,7 +1560,7 @@ const LEARNING = [
 ];
 
 const SOCIALS = [
-  { label: "aasifsiddique09@gmail.com", url: "mailto:aasifsiddique09@gmail.com" },
+  { label: "EMAIL", url: "mailto:aasifsiddique09@gmail.com" },
   { label: "Instagram", url: "https://www.instagram.com/the.aasif9" },
   { label: "GitHub", url: "https://github.com/thexaasif9" },
   { label: "Discord", url: "https://discord.com/users/1522979423329190110" },
@@ -1837,6 +1846,15 @@ const SELF_ASSESSMENT = [
      observing, so a failure here never leaves content invisible. Skill
      bars piggyback on the same observer: their fill and percentage only
      animate once their row is confirmed visible.
+     
+     REPLAY BEHAVIOR: Elements re-animate when they genuinely re-enter the
+     viewport after leaving. The observer tracks entry/exit states to avoid
+     animation spam while elements remain visible.
+     
+     VELOCITY-AWARE TIMING: Animation duration subtly adapts to scroll speed.
+     Slow/normal scrolling preserves full cinematic timing. Fast scrolling
+     gets slightly more responsive timing to avoid lag feel. The adjustment
+     is applied via CSS variable, so all future elements automatically work.
      ======================================================================= */
   function setupReveal() {
     const targets = document.querySelectorAll("[data-reveal]");
@@ -1846,6 +1864,54 @@ const SELF_ASSESSMENT = [
 
     targets.forEach((el) => el.classList.add("pre-reveal"));
     document.querySelectorAll(".skill-bar-fill").forEach((el) => el.classList.add("pre-fill"));
+
+    /* Lightweight scroll velocity detection — only tracks speed when needed,
+       not on every scroll event. Updates CSS variable for automatic timing
+       adaptation across all reveal animations. */
+    let lastScrollY = window.scrollY;
+    let lastScrollTime = Date.now();
+    let velocityCheckTimeout = null;
+
+    function updateScrollVelocity() {
+      const now = Date.now();
+      const currentScrollY = window.scrollY;
+      const deltaY = Math.abs(currentScrollY - lastScrollY);
+      const deltaTime = now - lastScrollTime;
+      
+      if (deltaTime > 0) {
+        const velocity = deltaY / deltaTime; // pixels per millisecond
+        
+        // Velocity thresholds (empirical, tuned for natural feel)
+        // slow/normal: 0 - 1.5 px/ms → 100% timing (900ms)
+        // fast: > 1.5 px/ms → ~90% timing (810ms)
+        let durationMultiplier = 1;
+        
+        if (velocity > 1.5) {
+          // Fast scroll: subtle timing reduction (900ms → ~810ms)
+          durationMultiplier = 0.9;
+        }
+        
+        // Apply to CSS variable (affects all data-reveal elements automatically)
+        const baseDuration = 900; // --dur-l default
+        const adjustedDuration = Math.round(baseDuration * durationMultiplier);
+        document.documentElement.style.setProperty('--dur-l', `${adjustedDuration}ms`);
+      }
+      
+      lastScrollY = currentScrollY;
+      lastScrollTime = now;
+    }
+
+    // Passive scroll listener — only sets timeout, doesn't do heavy work
+    window.addEventListener('scroll', () => {
+      clearTimeout(velocityCheckTimeout);
+      velocityCheckTimeout = setTimeout(() => {
+        updateScrollVelocity();
+        // Reset to normal timing after scroll stops (smooth return)
+        setTimeout(() => {
+          document.documentElement.style.setProperty('--dur-l', '900ms');
+        }, 150);
+      }, 50); // Debounce: check velocity 50ms after scroll activity
+    }, { passive: true });
 
     function revealElement(el) {
       el.classList.remove("pre-reveal");
@@ -1857,13 +1923,34 @@ const SELF_ASSESSMENT = [
         animateSkillNumber(el);
       }
 
-      io.unobserve(el);
+      // DO NOT unobserve — we need to track when it leaves for replay
+    }
+
+    function hideElement(el) {
+      // Element has left viewport — arm it for replay
+      el.classList.add("pre-reveal");
+      el.classList.remove("is-visible");
+      
+      // Re-arm skill bar fill animation
+      if (el.classList.contains("skill-row")) {
+        const fill = el.querySelector(".skill-bar-fill");
+        if (fill) fill.classList.add("pre-fill");
+      }
     }
 
     const io = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          if (entry.isIntersecting) revealElement(entry.target);
+          if (entry.isIntersecting) {
+            // Element entering viewport — play animation
+            revealElement(entry.target);
+          } else {
+            // Element leaving viewport — arm for replay
+            // Only hide if it was previously visible (avoid hiding before first reveal)
+            if (entry.target.classList.contains("is-visible")) {
+              hideElement(entry.target);
+            }
+          }
         });
       },
       { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
@@ -1923,6 +2010,42 @@ const SELF_ASSESSMENT = [
       const target = row.getAttribute("data-percent");
       if (numEl && target) numEl.textContent = target + "%";
     });
+  }
+
+  /* =======================================================================
+     PROJECT CARD VIEWPORT GLOW
+     Activates existing ambient glow automatically when cards enter viewport.
+     Uses separate lightweight observer to avoid interfering with reveal
+     animation system. Applies to all project cards (Work + LAB).
+     ======================================================================= */
+  function setupCardGlow() {
+    if (reduceMotion) return; // Skip for reduced-motion users
+    
+    const projectCards = document.querySelectorAll(".project-card");
+    if (!projectCards.length) return;
+
+    const glowObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            // Card entering viewport — activate existing glow
+            entry.target.classList.add("is-in-view");
+          } else {
+            // Card leaving viewport — remove glow
+            entry.target.classList.remove("is-in-view");
+          }
+        });
+      },
+      { threshold: 0.2, rootMargin: "0px 0px -10% 0px" }
+    );
+
+    projectCards.forEach((card) => glowObserver.observe(card));
+  }
+
+  try {
+    setupCardGlow();
+  } catch (err) {
+    console.error("[aasif] card glow setup failed:", err);
   }
 
   /* =======================================================================
