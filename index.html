@@ -355,6 +355,239 @@ a:focus-visible, button:focus-visible{
   font-size: 1.05rem;
   letter-spacing: .06em;
 }
+
+/* =========================================================================
+   EXPERIMENT — ADMIN AVAILABILITY SYSTEM
+   TEMPORARY ONLY — easily removable. All styles prefixed with .admin- or
+   .availability- for clean isolation.
+   ========================================================================= */
+.admin-availability{
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.85rem 0.5rem 0.7rem;
+  background: rgba(240, 230, 219, 0.48);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(145, 118, 110, 0.18);
+  border-radius: 999px;
+  transition: background var(--dur-s) var(--ease),
+              border-color var(--dur-s) var(--ease),
+              transform var(--dur-s) var(--ease);
+}
+.admin-availability:hover{
+  background: rgba(240, 230, 219, 0.72);
+  border-color: rgba(145, 118, 110, 0.32);
+  transform: translateY(-1px);
+}
+
+.availability-core{
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.availability-indicator{
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  position: relative;
+  transition: background var(--dur-m) var(--ease),
+              box-shadow var(--dur-m) var(--ease);
+}
+
+/* ONLINE state: subtle breathing pulse */
+.admin-availability[data-status="online"] .availability-indicator{
+  background: rgba(145, 118, 110, 0.85);
+  animation: availability-pulse 2.6s ease-in-out infinite;
+}
+
+@keyframes availability-pulse{
+  0%, 100%{ 
+    opacity: 1; 
+    transform: scale(1); 
+    box-shadow: 0 0 0 0 rgba(145, 118, 110, 0.3);
+  }
+  50%{ 
+    opacity: 0.65; 
+    transform: scale(0.88); 
+    box-shadow: 0 0 0 2px rgba(145, 118, 110, 0.12);
+  }
+}
+
+/* OFFLINE state: muted, static */
+.admin-availability[data-status="offline"] .availability-indicator{
+  background: rgba(183, 167, 169, 0.5);
+  opacity: 0.6;
+}
+
+.availability-text{
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  line-height: 1.1;
+}
+
+.availability-label{
+  font-family: var(--f-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  color: var(--muted);
+  text-transform: uppercase;
+}
+
+.availability-status{
+  font-family: var(--f-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  text-transform: uppercase;
+  transition: color var(--dur-m) var(--ease);
+}
+
+.admin-availability[data-status="online"] .availability-status{
+  color: var(--ink);
+}
+
+.admin-availability[data-status="offline"] .availability-status{
+  color: var(--muted);
+}
+
+/* Schedule expansion on hover (desktop) */
+.availability-schedule{
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: 0;
+  background: rgba(240, 230, 219, 0.96);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(145, 118, 110, 0.24);
+  border-radius: 8px;
+  padding: 0.85rem 1rem;
+  min-width: 160px;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-4px);
+  transition: opacity var(--dur-s) var(--ease),
+              visibility var(--dur-s) var(--ease),
+              transform var(--dur-s) var(--ease);
+  pointer-events: none;
+  box-shadow: 0 4px 16px -4px rgba(0, 0, 0, 0.12),
+              0 0 0 1px rgba(145, 118, 110, 0.14);
+}
+
+.admin-availability:hover .availability-schedule{
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.schedule-title{
+  font-family: var(--f-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin-bottom: 0.5rem;
+}
+
+.schedule-times{
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-family: var(--f-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.schedule-timezone{
+  font-family: var(--f-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* State transition: brief material shift on status change */
+.admin-availability.is-transitioning{
+  animation: availability-state-change 520ms cubic-bezier(.19,1,.22,1);
+}
+
+@keyframes availability-state-change{
+  0%{ opacity: 1; transform: translateY(0); }
+  20%{ opacity: 0.6; transform: translateY(-2px); }
+  50%{ opacity: 0.75; }
+  100%{ opacity: 1; transform: translateY(0); }
+}
+
+/* Reduced motion: remove pulse and transition animations */
+@media (prefers-reduced-motion: reduce){
+  .availability-indicator{
+    animation: none !important;
+  }
+  .admin-availability.is-transitioning{
+    animation: none !important;
+  }
+  .availability-schedule{
+    transition: opacity var(--dur-s) var(--ease),
+                visibility var(--dur-s) var(--ease) !important;
+    transform: none !important;
+  }
+  .admin-availability:hover .availability-schedule{
+    transform: none !important;
+  }
+}
+
+/* Mobile: tap to reveal schedule, no hover dependency */
+@media (max-width: 1024px){
+  .admin-availability{
+    padding: 0.45rem 0.75rem 0.45rem 0.65rem;
+  }
+  
+  .availability-schedule{
+    /* Show on tap/focus instead of hover */
+    transition: opacity var(--dur-s) var(--ease),
+                visibility var(--dur-s) var(--ease),
+                transform var(--dur-s) var(--ease);
+  }
+  
+  /* Mobile tap state */
+  .admin-availability.is-expanded .availability-schedule{
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+  
+  .availability-label{
+    font-size: 0.6rem;
+  }
+  
+  .availability-status{
+    font-size: 0.68rem;
+  }
+}
+
+/* Very small screens: even more compact */
+@media (max-width: 640px){
+  .admin-availability{
+    padding: 0.4rem 0.7rem 0.4rem 0.6rem;
+  }
+  
+  .availability-indicator{
+    width: 6px;
+    height: 6px;
+  }
+}
+
+/* =========================================================================
+   END EXPERIMENT — ADMIN AVAILABILITY SYSTEM
+   ========================================================================= */
+
 .nav-links{
   display: flex;
   gap: clamp(1.25rem, 3vw, 2.5rem);
@@ -612,31 +845,6 @@ a:focus-visible, button:focus-visible{
   border-radius: 50%;
   background: var(--accent);
   animation: pulse 2.2s ease-in-out infinite;
-}
-.availability-status{ color: var(--ink); }
-.availability-status[data-state="offline"]{ color: var(--muted); }
-.availability-toggle{
-  padding: 0;
-  color: var(--accent);
-  font: inherit;
-  letter-spacing: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-.availability-schedule{
-  grid-column: 1 / -1;
-  max-width: 42ch;
-  margin-top: -.2rem;
-  color: var(--muted);
-  font-family: var(--f-mono);
-  font-size: .66rem;
-  line-height: 1.7;
-  letter-spacing: .06em;
-}
-.availability-schedule[hidden]{ display: none; }
-.status-label:has(.availability-status[data-state="offline"]) .dot{
-  animation: none;
-  opacity: .52;
 }
 @keyframes pulse{
   0%, 100%{ opacity: 1; transform: scale(1); }
@@ -1545,10 +1753,14 @@ span.social-link:active{ scale: 1; }
 }
 
 /* =========================================================================
-   INTERACTION LANGUAGE
-   Project personalities and material settling share the existing motion
-   system; no separate animation engine is introduced here.
+   EXPERIMENT — CUSTOM MOTION LANGUAGE
+   All experimental styles are isolated here.
+   To revert: delete everything between the two EXPERIMENT markers.
    ========================================================================= */
+
+/* ── EXP 1: Motion Signature — expose scroll velocity to CSS ───────────── */
+/* --sv (scroll velocity) is written by JS onto documentElement.
+   0 = idle/slow, 1 = fast. Used by cards and cursor ring. */
 
 /* ── EXP 2: Project-specific transition personalities ──────────────────── */
 /* Each project gets a slightly different clip-path reveal axis.
@@ -1644,6 +1856,16 @@ span.social-link:active{ scale: 1; }
   }
 }
 
+/* ── EXP 3: Scroll velocity awareness — cursor ring ───────────────────── */
+/* The cursor ring subtly thins and gains opacity during fast scrolling.
+   --sv is a 0–1 value written by JS. We can't interpolate custom props
+   directly in standard CSS, so JS writes inline style vars and the ring
+   uses them via calc(). */
+.cursor {
+  /* EXP: velocity-responsive ring — border thickens slightly at rest */
+  outline-width: calc(1px + var(--sv, 0) * 0px); /* reserved for future */
+}
+
 /* ── EXP 4: Material memory — slow highlight decay on card leave ────────── */
 /* When the cursor leaves a card, the refraction highlight fades out slowly
    rather than resetting instantly. This is the "warm glass memory" effect.
@@ -1677,8 +1899,535 @@ span.social-link:active{ scale: 1; }
   }
 }
 
+/* ── MATERIAL EXPERIMENT — HYPER-REALISTIC GLASS RESPONSE ──────────────────
+   New CSS variables written by setupMaterial() in JS:
+     --lx, --ly     : raw cursor position 0–1 (lerped, smooth)
+     --ldist        : 0 = cursor at center, 1 = cursor near edge
+   All values settle back to neutral on mouseleave via JS lerp.
+   ──────────────────────────────────────────────────────────────────────── */
+
+/* --- Directional edge shimmer (::before) --------------------------------
+   The existing top-edge highlight becomes directional: when the cursor
+   is near the left side the shimmer shifts left; near the right, right.
+   This mimics how ambient light catches a glass edge.                    */
+.project-card{
+  --lx: 0.5;      /* cursor X position 0–1, centre default */
+  --ly: 0.5;      /* cursor Y position 0–1 */
+  --ldist: 0;     /* 0 = centre, 1 = edge */
+}
+.project-card::before{
+  /* Override: position gradient at cursor X rather than fixed centre */
+  background: linear-gradient(90deg,
+    transparent                                    0%,
+    rgba(145, 118, 110, calc(0.14 + var(--ldist) * 0.16))
+      calc(max(0%, calc(var(--lx) * 100% - 22%))),
+    rgba(145, 118, 110, calc(0.32 + var(--ldist) * 0.14))
+      calc(var(--lx) * 100%),
+    rgba(145, 118, 110, calc(0.14 + var(--ldist) * 0.16))
+      calc(min(100%, calc(var(--lx) * 100% + 22%))),
+    transparent                                    100%
+  );
+  /* Transition the gradient shift smoothly */
+  transition: background 160ms cubic-bezier(.16,.84,.44,1),
+              opacity var(--dur-m) var(--ease);
+}
+
+/* --- Two-layer specular highlight (::after) -----------------------------
+   Replace the single flat radial with a physically layered structure:
+   - Inner: tight specular spot (like a real reflection catch)
+   - Outer: broad diffuse wash
+   The specular spot is brighter near edges (--ldist) as on real glass.  */
+.project-card::after{
+  background:
+    /* Tight specular — small, bright, follows cursor precisely */
+    radial-gradient(
+      80px circle at calc(var(--lx) * 100%) calc(var(--ly) * 100%),
+      rgba(255, 255, 255, calc(0.028 + var(--ldist) * 0.022)) 0%,
+      rgba(145, 118, 110, calc(0.018 + var(--ldist) * 0.012)) 40%,
+      transparent 100%
+    ),
+    /* Broad ambient wash — wide, soft, follows cursor loosely */
+    radial-gradient(
+      480px circle at calc(var(--lx) * 100%) calc(var(--ly) * 100%),
+      rgba(145, 118, 110, 0.022) 0%,
+      rgba(0, 0, 0, 0.012) 40%,
+      transparent 72%
+    );
+  mix-blend-mode: multiply;
+  /* Transition already handled by opacity in base CSS + exp-settling */
+}
+
+/* --- Inner content depth layer -----------------------------------------
+   The .project-info subtly shifts opposite to cursor position — a tiny
+   parallax that suggests the content is behind the glass surface.
+   Uses CSS `translate` (independent property) to avoid conflicting with
+   the reveal system's `transform` property.
+   Movement capped at ±2.5px horizontal, ±1.5px vertical.               */
+.project-card:hover .project-info{
+  translate: calc((var(--lx) - 0.5) * -2.5px)
+             calc((var(--ly) - 0.5) * -1.5px);
+  transition: translate 200ms cubic-bezier(.16,.84,.44,1);
+}
+.project-card:not(:hover) .project-info{
+  translate: 0 0;
+  transition: translate 900ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* --- Reduced motion: disable all material response */
+@media (prefers-reduced-motion: reduce) {
+  .project-card::before{
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(145, 118, 110, 0.28) 25%,
+      rgba(145, 118, 110, 0.40) 50%,
+      rgba(145, 118, 110, 0.28) 75%,
+      transparent 100%
+    ) !important;
+    transition: opacity var(--dur-m) var(--ease) !important;
+  }
+  .project-card:hover .project-info{
+    translate: none !important;
+    transition: none !important;
+  }
+  .project-card:not(:hover) .project-info{
+    translate: none !important;
+    transition: none !important;
+  }
+}
+
+/* --- Mobile: disable material response, preserve base glass */
+@media (max-width: 1024px){
+  .project-card::before{
+    background: linear-gradient(90deg,
+      transparent 0%,
+      rgba(145, 118, 110, 0.28) 25%,
+      rgba(145, 118, 110, 0.40) 50%,
+      rgba(145, 118, 110, 0.28) 75%,
+      transparent 100%
+    ) !important;
+  }
+  .project-card:hover .project-info{
+    translate: none !important;
+  }
+}
+
 /* =========================================================================
-   END INTERACTION LANGUAGE
+   END EXPERIMENT
+   ========================================================================= */
+
+/* =========================================================================
+   EXPERIMENT — ADAPTIVE WEBSITE MEMORY (CSS)
+   TEMPORARY ONLY — easily removable.
+   
+   Subtle visual adaptations based on visitor's familiarity:
+   - Previously visited projects get slightly different transitions
+   - Exploration state affects reveal timing
+   - Scroll profile influences hover responsiveness
+   ========================================================================= */
+
+/* ─── VISITED PROJECT ADAPTATION ────────────────────────────────────────
+   Previously opened projects get subtly faster, more familiar transitions */
+
+.project-card[data-visited="true"] .project-preview {
+  transition: clip-path 620ms cubic-bezier(.19,1,.22,1),
+              transform 620ms cubic-bezier(.19,1,.22,1),
+              box-shadow var(--dur-hover) var(--ease);
+}
+
+.project-card[data-visited="true"] .project-info {
+  transition: opacity 520ms cubic-bezier(.19,1,.22,1),
+              transform 520ms cubic-bezier(.19,1,.22,1);
+}
+
+/* Visited card gets slightly less dramatic entry (subtle familiarity) */
+.project-card[data-visited="true"].pre-reveal .project-preview {
+  transform: translateY(10px); /* vs 14px for unvisited */
+}
+
+.project-card[data-visited="true"].pre-reveal .project-info {
+  transform: translateY(8px); /* vs 12px for unvisited */
+}
+
+/* ─── EXPLORATION STATE ADAPTATION ──────────────────────────────────────
+   Generic reveals adapt to visitor's familiarity level */
+
+/* Deep exploration: more confident, less introductory motion */
+[data-exploration="deep"] [data-reveal].pre-reveal {
+  transform: translateY(12px); /* vs 16px default */
+}
+
+[data-exploration="familiar"] [data-reveal].pre-reveal {
+  transform: translateY(14px);
+}
+
+/* New/exploring: keep full introductory motion (no override) */
+
+/* ─── SCROLL PROFILE ADAPTATION ─────────────────────────────────────────
+   Hover interactions adapt to visitor's scroll behavior */
+
+/* Fast scrollers: snappier hovers */
+[data-scroll-profile="fast"] .project-card:hover,
+[data-scroll-profile="fast"] .btn-ghost:hover,
+[data-scroll-profile="fast"] .social-link:hover {
+  transition-duration: 140ms; /* vs 180-200ms default */
+}
+
+/* Slow scrollers: slightly more languid hovers */
+[data-scroll-profile="slow"] .project-card:hover,
+[data-scroll-profile="slow"] .btn-ghost:hover,
+[data-scroll-profile="slow"] .social-link:hover {
+  transition-duration: 220ms; /* vs 180-200ms default */
+}
+
+/* ─── ADAPTIVE DURATION VARIABLES ───────────────────────────────────────
+   JavaScript writes these based on exploration state */
+
+:root {
+  --dur-l-adaptive: 860ms;    /* Adapts based on familiarity */
+  --dur-hover-adaptive: 180ms; /* Adapts based on scroll profile */
+}
+
+/* Use adaptive durations for key animations */
+[data-reveal] {
+  transition: opacity var(--dur-l-adaptive) var(--ease-out-expo),
+              transform var(--dur-l-adaptive) var(--ease-out-expo);
+}
+
+/* Project cards already have their own transitions, but info panels can use adaptive timing */
+.project-card.is-visible .project-info {
+  transition: opacity var(--dur-l-adaptive) cubic-bezier(.19,1,.22,1),
+              transform var(--dur-l-adaptive) cubic-bezier(.19,1,.22,1);
+}
+
+/* ─── SUBTLE VISITED INDICATOR ──────────────────────────────────────────
+   Extremely subtle visual cue (optional, can be removed if too obvious) */
+
+.project-card[data-visited="true"]::before {
+  opacity: 0.65; /* Slightly dimmer top shimmer on visited cards */
+}
+
+/* ─── REDUCED MOTION OVERRIDE ───────────────────────────────────────────
+   All adaptive motion respects reduced motion preference */
+
+@media (prefers-reduced-motion: reduce) {
+  .project-card[data-visited="true"] .project-preview,
+  .project-card[data-visited="true"] .project-info,
+  [data-exploration] [data-reveal],
+  [data-scroll-profile] .project-card:hover,
+  [data-scroll-profile] .btn-ghost:hover,
+  [data-scroll-profile] .social-link:hover {
+    transition-duration: 0.001ms !important;
+  }
+  
+  :root {
+    --dur-l-adaptive: 0.001ms !important;
+    --dur-hover-adaptive: 0.001ms !important;
+  }
+}
+
+/* ─── MOBILE SIMPLIFICATION ────────────────────────────────────────────
+   Reduce adaptive motion on mobile (preserve performance) */
+
+@media (max-width: 1024px) {
+  /* Visited projects: minimal difference on mobile */
+  .project-card[data-visited="true"] .project-preview {
+    transition: clip-path 680ms cubic-bezier(.19,1,.22,1),
+                transform 680ms cubic-bezier(.19,1,.22,1),
+                box-shadow var(--dur-hover) var(--ease);
+  }
+  
+  /* Scroll profile adaptation: disabled on mobile (touch has different dynamics) */
+  [data-scroll-profile="fast"] .project-card:hover,
+  [data-scroll-profile="slow"] .project-card:hover {
+    transition-duration: var(--dur-hover); /* Use default */
+  }
+}
+
+/* =========================================================================
+   END EXPERIMENT — ADAPTIVE WEBSITE MEMORY (CSS)
+   ========================================================================= */
+
+/* =========================================================================
+   EXPERIMENT — PROJECT ARTIFACTS
+   TEMPORARY ONLY — easily removable.
+   
+   Each project becomes a distinct digital artifact with its own personality:
+   - NEXUS: Precision / Interface Artifact
+   - The Dark File: Archive / Document Artifact  
+   - DEADCORE: Experimental Object
+   
+   All share one design system but have unique compositional details.
+   ========================================================================= */
+
+/* ─── SHARED ARTIFACT METADATA ──────────────────────────────────────────
+   Subtle metadata system for all artifacts */
+
+.artifact-metadata {
+  font-family: var(--f-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-top: 0.85rem;
+  opacity: 0.75;
+  transition: opacity var(--dur-hover) var(--ease);
+}
+
+.project-card:hover .artifact-metadata {
+  opacity: 1;
+}
+
+.metadata-row {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.25rem;
+  align-items: baseline;
+}
+
+.metadata-label {
+  color: var(--muted-dim);
+  min-width: 3.5rem;
+}
+
+.metadata-value {
+  color: var(--ink-soft);
+}
+
+.metadata-status-active {
+  color: var(--accent);
+}
+
+/* ─── ARTIFACT 01: NEXUS — PRECISION / INTERFACE ────────────────────────
+   Engineered, precise, controlled */
+
+.project-card[data-artifact="nexus"] {
+  /* Subtle grid alignment emphasis */
+  position: relative;
+}
+
+/* Precision alignment indicators (subtle corner marks) */
+.project-card[data-artifact="nexus"]::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-top: 1px solid rgba(145, 118, 110, 0.12);
+  border-right: 1px solid rgba(145, 118, 110, 0.12);
+  opacity: 0;
+  transition: opacity var(--dur-m) var(--ease);
+  pointer-events: none;
+}
+
+.project-card[data-artifact="nexus"]:hover::after {
+  opacity: 1;
+}
+
+/* Directional reveal: right-to-left (precision entering frame) */
+.project-card[data-artifact="nexus"] .project-preview {
+  clip-path: inset(0 100% 0 0 round 6px);
+  transform: translateX(-6px);
+  transition: clip-path 740ms cubic-bezier(.19,1,.22,1),
+              transform 740ms cubic-bezier(.19,1,.22,1),
+              box-shadow var(--dur-hover) var(--ease);
+}
+
+.project-card[data-artifact="nexus"].is-visible .project-preview {
+  clip-path: inset(0 0% 0 0 round 6px);
+  transform: translateX(0);
+}
+
+/* Info panel: slightly faster, more controlled */
+.project-card[data-artifact="nexus"] .project-info {
+  transition: opacity 580ms cubic-bezier(.22,.61,.36,1),
+              transform 580ms cubic-bezier(.22,.61,.36,1);
+}
+
+/* Hover: subtle vertical shift (interface precision) */
+.project-card[data-artifact="nexus"]:hover .project-title {
+  transform: translateY(-1px);
+}
+
+/* ─── ARTIFACT 02: THE DARK FILE — ARCHIVE / DOCUMENT ───────────────────
+   Typographic, archival, discovered */
+
+.project-card[data-artifact="dark-file"] {
+  position: relative;
+}
+
+/* Subtle archival indexing mark */
+.project-card[data-artifact="dark-file"] .project-index {
+  position: relative;
+}
+
+.project-card[data-artifact="dark-file"] .project-index::before {
+  content: "//";
+  position: absolute;
+  left: -1.2rem;
+  color: var(--muted-dim);
+  opacity: 0.4;
+  transition: opacity var(--dur-hover) var(--ease);
+}
+
+.project-card[data-artifact="dark-file"]:hover .project-index::before {
+  opacity: 0.7;
+}
+
+/* Typography-led reveal: fade in with subtle clip */
+.project-card[data-artifact="dark-file"] .project-preview {
+  clip-path: inset(0 0 0 0 round 6px);
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 820ms cubic-bezier(.16,.84,.44,1),
+              transform 820ms cubic-bezier(.16,.84,.44,1),
+              clip-path 820ms cubic-bezier(.16,.84,.44,1),
+              box-shadow var(--dur-hover) var(--ease);
+}
+
+.project-card[data-artifact="dark-file"].is-visible .project-preview {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Info panel: deliberate, archival pace */
+.project-card[data-artifact="dark-file"] .project-info {
+  transition: opacity 880ms cubic-bezier(.16,.84,.44,1),
+              transform 880ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* Title: slight letter-spacing expansion on hover (archival discovery) */
+.project-card[data-artifact="dark-file"]:hover .project-title {
+  letter-spacing: 0.01em;
+}
+
+/* ─── ARTIFACT 03: DEADCORE — EXPERIMENTAL OBJECT ───────────────────────
+   Mysterious, spatial, atmospheric */
+
+.project-card[data-artifact="deadcore"] {
+  position: relative;
+}
+
+/* Subtle depth field (atmospheric containment) */
+.project-card[data-artifact="deadcore"]::before {
+  opacity: 0.5;
+  background: linear-gradient(135deg,
+    transparent 0%,
+    rgba(145, 118, 110, 0.04) 30%,
+    rgba(145, 118, 110, 0.06) 50%,
+    rgba(145, 118, 110, 0.04) 70%,
+    transparent 100%
+  );
+}
+
+/* Diagonal spatial reveal (experimental entry) */
+.project-card[data-artifact="deadcore"] .project-preview {
+  clip-path: inset(50% 50% 0 0 round 6px);
+  transform: translate(-4px, 4px);
+  transition: clip-path 900ms cubic-bezier(.16,.84,.44,1),
+              transform 900ms cubic-bezier(.16,.84,.44,1),
+              box-shadow var(--dur-hover) var(--ease);
+}
+
+.project-card[data-artifact="deadcore"].is-visible .project-preview {
+  clip-path: inset(0% 0% 0 0 round 6px);
+  transform: translate(0, 0);
+}
+
+/* Info panel: slowest, most atmospheric */
+.project-card[data-artifact="deadcore"] .project-info {
+  transition: opacity 920ms cubic-bezier(.16,.84,.44,1),
+              transform 920ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* Hover: subtle spatial shift (experimental object depth) */
+.project-card[data-artifact="deadcore"]:hover .project-preview {
+  transform: translate(0, -2px);
+}
+
+.project-card[data-artifact="deadcore"]:hover .project-title {
+  transform: translateX(2px);
+}
+
+/* ─── ARTIFACT HANDOFFS ─────────────────────────────────────────────────
+   Cinematic transitions between artifact personalities */
+
+/* Previous artifact recedes with personality-specific behavior */
+.project-card[data-artifact="nexus"].is-receding {
+  /* Precision collapses cleanly */
+  transform: scale(0.994) translateY(-4px);
+}
+
+.project-card[data-artifact="dark-file"].is-receding {
+  /* Archive fades back into collection */
+  opacity: 0.38;
+  transform: scale(0.996) translateY(-3px);
+}
+
+.project-card[data-artifact="deadcore"].is-receding {
+  /* Experimental object drifts atmospherically */
+  opacity: 0.35;
+  transform: scale(0.992) translate(-2px, -5px);
+  filter: saturate(0.6);
+}
+
+/* ─── MOBILE SIMPLIFICATION ────────────────────────────────────────────
+   Preserve personalities but reduce complexity */
+
+@media (max-width: 1024px) {
+  /* Simplify reveals to standard bottom-up for performance */
+  .project-card[data-artifact="nexus"] .project-preview,
+  .project-card[data-artifact="dark-file"] .project-preview,
+  .project-card[data-artifact="deadcore"] .project-preview {
+    clip-path: inset(100% 0 0 0 round 6px) !important;
+    transform: translateY(10px) !important;
+    opacity: 1 !important;
+    transition: clip-path 720ms cubic-bezier(.19,1,.22,1),
+                transform 720ms cubic-bezier(.19,1,.22,1),
+                box-shadow var(--dur-hover) var(--ease) !important;
+  }
+  
+  .project-card[data-artifact].is-visible .project-preview {
+    clip-path: inset(0% 0 0 0 round 6px) !important;
+    transform: translateY(0) !important;
+  }
+  
+  /* Remove corner marks on mobile */
+  .project-card[data-artifact="nexus"]::after {
+    display: none;
+  }
+  
+  /* Simplify metadata */
+  .artifact-metadata {
+    font-size: 0.62rem;
+  }
+}
+
+/* ─── REDUCED MOTION OVERRIDE ───────────────────────────────────────────
+   All artifact personalities respect reduced motion */
+
+@media (prefers-reduced-motion: reduce) {
+  .project-card[data-artifact] .project-preview,
+  .project-card[data-artifact] .project-info {
+    clip-path: none !important;
+    transform: none !important;
+    opacity: 1 !important;
+    transition: box-shadow var(--dur-hover) var(--ease) !important;
+  }
+  
+  .project-card[data-artifact="nexus"]::after,
+  .project-card[data-artifact="dark-file"] .project-index::before {
+    display: none;
+  }
+  
+  .project-card[data-artifact]:hover .project-title {
+    transform: none !important;
+    letter-spacing: inherit !important;
+  }
+}
+
+/* =========================================================================
+   END EXPERIMENT — PROJECT ARTIFACTS
    ========================================================================= */
 
 </style>
@@ -1708,6 +2457,25 @@ span.social-link:active{ scale: 1; }
 <header class="nav" id="siteNav">
   <div class="nav-inner container">
     <a class="nav-logo" href="#top">AASIF</a>
+
+    <!-- EXPERIMENT: Admin Availability Indicator -->
+    <div class="admin-availability" id="adminAvailability" aria-label="Admin availability status">
+      <div class="availability-core">
+        <span class="availability-indicator" aria-hidden="true"></span>
+        <div class="availability-text">
+          <span class="availability-label">ADMIN</span>
+          <span class="availability-status" id="availabilityStatus">ONLINE</span>
+        </div>
+      </div>
+      <div class="availability-schedule" id="availabilitySchedule" role="tooltip">
+        <p class="schedule-title">AVAILABILITY</p>
+        <div class="schedule-times">
+          <span>10:00 — 17:00</span>
+          <span>19:30 — 03:00</span>
+        </div>
+        <p class="schedule-timezone">IST / UTC+5:30</p>
+      </div>
+    </div>
 
     <nav class="nav-links" aria-label="Primary">
       <a href="#work" data-cursor-view>WORK</a>
@@ -1769,15 +2537,7 @@ span.social-link:active{ scale: 1; }
   <!-- ============================ NOW ============================ -->
   <section class="now">
     <div class="container now-inner">
-      <div class="status-label" data-reveal>
-        <span class="dot" aria-hidden="true"></span>
-        <span>ADMIN / <span class="availability-status" data-availability-state aria-live="polite">CHECKING</span></span>
-        <button class="availability-toggle" type="button" aria-expanded="false" aria-controls="availabilitySchedule">SCHEDULE</button>
-      </div>
-      <p class="availability-schedule" id="availabilitySchedule" hidden>
-        ONLINE / 10:00–17:00 &middot; 19:30–03:00 IST<br />
-        OFFLINE / 03:00–10:00 &middot; 17:00–19:30 IST
-      </p>
+      <p class="status-label" data-reveal><span class="dot"></span> STATUS</p>
       <h2 class="now-heading" data-reveal>NOW</h2>
       <p class="now-text" data-reveal>
         Learning web development. Experimenting with visual storytelling.
@@ -1916,6 +2676,11 @@ const SELECTED_WORK = [
     url: "https://nexuscalculater.netlify.app/",
     cta: "VIEW PROJECT",
     tone: "default",
+    // EXPERIMENT: Artifact metadata
+    artifact: "nexus",
+    artifactType: "TOOL / EXPERIMENT",
+    artifactStatus: "ACTIVE",
+    artifactYear: "2026"
   },
   {
     index: "02",
@@ -1927,6 +2692,11 @@ const SELECTED_WORK = [
     url: "https://thedarkfile.netlify.app/",
     cta: "VIEW PROJECT",
     tone: "default",
+    // EXPERIMENT: Artifact metadata
+    artifact: "dark-file",
+    artifactType: "ARCHIVE / EXPERIMENT",
+    artifactStatus: "ACTIVE",
+    artifactYear: "2026"
   },
   {
     index: "03",
@@ -1938,6 +2708,11 @@ const SELECTED_WORK = [
     url: "https://nexusspeedbyaasif.netlify.app",
     cta: "VIEW PROJECT",
     tone: "default",
+    // EXPERIMENT: Artifact metadata (part of NEXUS family)
+    artifact: "nexus",
+    artifactType: "TOOL / EXPERIMENT",
+    artifactStatus: "ACTIVE",
+    artifactYear: "2026"
   },
 ];
 
@@ -1951,6 +2726,11 @@ const LAB_WORK = [
     url: "https://deadcore.netlify.app/",
     cta: "VIEW EXPERIMENT",
     tone: "lab",
+    // EXPERIMENT: Artifact metadata
+    artifact: "deadcore",
+    artifactType: "EXPERIMENT / OBJECT",
+    artifactStatus: "ACTIVE",
+    artifactYear: "2026"
   },
 ];
 
@@ -2026,8 +2806,27 @@ const SELF_ASSESSMENT = [
     const projectSlug = item.title.toLowerCase()
       .replace(/\s+/g, '-')
       .replace(/[^a-z0-9-]/g, '');
+    
+    // EXPERIMENT: Artifact metadata (subtle, optional)
+    const artifactMetadataHTML = item.artifact ? `
+      <div class="artifact-metadata">
+        <div class="metadata-row">
+          <span class="metadata-label">TYPE</span>
+          <span class="metadata-value">${item.artifactType || 'EXPERIMENT'}</span>
+        </div>
+        <div class="metadata-row">
+          <span class="metadata-label">STATUS</span>
+          <span class="metadata-value metadata-status-active">${item.artifactStatus || 'ACTIVE'}</span>
+        </div>
+        <div class="metadata-row">
+          <span class="metadata-label">YEAR</span>
+          <span class="metadata-value">${item.artifactYear || '2026'}</span>
+        </div>
+      </div>
+    ` : "";
+    
     return `
-      <article class="project-card tone-${item.tone === "lab" ? "lab" : "default"}" data-reveal data-project="${projectSlug}">
+      <article class="project-card tone-${item.tone === "lab" ? "lab" : "default"}" data-reveal data-project="${projectSlug}" data-artifact="${item.artifact || ''}">
         <div class="project-info">
           <span class="project-index">${item.index}</span>
           ${creatorHTML}
@@ -2035,6 +2834,7 @@ const SELF_ASSESSMENT = [
           <span class="project-category">${item.category}</span>
           <p class="project-desc">${item.description}</p>
           ${noteHTML}
+          ${artifactMetadataHTML}
           <a class="project-link" href="${item.url}" target="_blank" rel="noopener noreferrer" data-cursor-active>
             ${item.cta} <span class="arrow">↗</span>
           </a>
@@ -2134,113 +2934,6 @@ const SELF_ASSESSMENT = [
   }
 
   /* =======================================================================
-     ADMIN AVAILABILITY + SESSION JOURNEY
-     Local-only, deliberately small state. It records no personal data and
-     never leaves the browser. The visual response is limited to familiar
-     project handoffs and slightly calmer repeat section reveals.
-     ======================================================================= */
-  function setupAvailability() {
-    const stateEl = document.querySelector("[data-availability-state]");
-    const toggle = document.querySelector(".availability-toggle");
-    const schedule = document.getElementById("availabilitySchedule");
-    if (!stateEl) return;
-
-    function getKolkataMinutes(date = new Date()) {
-      const parts = new Intl.DateTimeFormat("en-GB", {
-        timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
-      }).formatToParts(date);
-      const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
-      return Number(values.hour) * 60 + Number(values.minute);
-    }
-
-    function updateAvailability() {
-      const minutes = getKolkataMinutes();
-      const online = (minutes >= 600 && minutes < 1020) || minutes >= 1170 || minutes < 180;
-      stateEl.textContent = online ? "ONLINE" : "OFFLINE";
-      stateEl.dataset.state = online ? "online" : "offline";
-    }
-
-    updateAvailability();
-    const delayToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
-    window.setTimeout(() => {
-      updateAvailability();
-      window.setInterval(updateAvailability, 60000);
-    }, delayToNextMinute);
-
-    if (toggle && schedule) {
-      toggle.addEventListener("click", () => {
-        const open = schedule.hidden;
-        schedule.hidden = !open;
-        toggle.setAttribute("aria-expanded", String(open));
-      });
-    }
-  }
-
-  function setupSessionJourney() {
-    const key = "aasif-portfolio-journey-v1";
-    const blank = { projects: [], sections: [], navigated: false, reachedEnd: false };
-    let state = { ...blank };
-
-    try {
-      const saved = sessionStorage.getItem(key);
-      if (saved) state = { ...blank, ...JSON.parse(saved) };
-    } catch (_) { /* Storage can be unavailable; the site remains fully functional. */ }
-
-    const save = () => {
-      try { sessionStorage.setItem(key, JSON.stringify(state)); } catch (_) {}
-    };
-    const remember = (bucket, value) => {
-      if (!state[bucket].includes(value)) {
-        state[bucket].push(value);
-        save();
-      }
-    };
-
-    document.documentElement.dataset.exploration = state.projects.length >= 3 ? "deep" : state.projects.length ? "familiar" : "new";
-    document.querySelectorAll(".project-card").forEach((card) => {
-      const project = card.dataset.project;
-      if (state.projects.includes(project)) card.classList.add("is-familiar");
-      card.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
-        remember("projects", project);
-        card.classList.add("is-familiar");
-        document.documentElement.dataset.exploration = state.projects.length >= 3 ? "deep" : "familiar";
-      }));
-    });
-
-    document.querySelectorAll(".nav-links a, .mobile-menu a, .btn-ghost").forEach((link) => {
-      link.addEventListener("click", () => { state.navigated = true; save(); });
-    });
-
-    if ("IntersectionObserver" in window) {
-      const sections = document.querySelectorAll("main section[id]");
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) remember("sections", entry.target.id);
-        });
-      }, { threshold: 0.45 });
-      sections.forEach((section) => observer.observe(section));
-    }
-
-    const contact = document.getElementById("contact");
-    if (contact && "IntersectionObserver" in window) {
-      new IntersectionObserver((entries) => {
-        if (entries.some((entry) => entry.isIntersecting)) {
-          state.reachedEnd = true;
-          save();
-        }
-      }, { threshold: 0.2 }).observe(contact);
-    }
-
-    return {
-      hasSeenSection: (id) => state.sections.includes(id),
-      hasSeenProject: (id) => state.projects.includes(id)
-    };
-  }
-
-  try { setupAvailability(); } catch (err) { console.error("[aasif] availability setup failed:", err); }
-  const journey = setupSessionJourney();
-
-  /* =======================================================================
      SCROLL DISPATCH — one listener, batched to at most once per frame.
      Nav state and the timecode both register into this instead of each
      adding their own "scroll" listener.
@@ -2308,6 +3001,217 @@ const SELF_ASSESSMENT = [
   } catch (err) {
     console.error("[aasif] nav setup failed:", err);
   }
+
+  /* =======================================================================
+     EXPERIMENT — ADMIN AVAILABILITY SYSTEM
+     TEMPORARY ONLY — easily removable. All logic isolated in this block.
+     
+     Schedule-based availability indicator with automatic state updates.
+     Timezone: Asia/Kolkata (IST / UTC+5:30)
+     
+     ONLINE:  10:00 AM → 5:00 PM
+              7:30 PM → 3:00 AM (crosses midnight)
+     
+     OFFLINE: 3:00 AM → 10:00 AM
+              5:00 PM → 7:30 PM
+     ======================================================================= */
+  function setupAdminAvailability() {
+    const availability = document.getElementById("adminAvailability");
+    const statusEl = document.getElementById("availabilityStatus");
+    
+    if (!availability || !statusEl) return;
+
+    // IST timezone identifier
+    const IST_TIMEZONE = "Asia/Kolkata";
+    
+    // Schedule in IST hours (24-hour format)
+    const SCHEDULE = {
+      online: [
+        { start: 10, end: 17 },      // 10:00 AM - 5:00 PM
+        { start: 19.5, end: 27 }     // 7:30 PM - 3:00 AM (27 = next day 3 AM)
+      ]
+    };
+
+    let currentStatus = null;
+    let nextUpdateTimeout = null;
+
+    /**
+     * Get current time in IST as decimal hours (e.g., 19.5 = 7:30 PM)
+     */
+    function getISTDecimalTime() {
+      try {
+        const now = new Date();
+        
+        // Get IST time string
+        const istTimeString = now.toLocaleString("en-US", {
+          timeZone: IST_TIMEZONE,
+          hour12: false,
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+          hour: '2-digit',
+          minute: '2-digit',
+          second: '2-digit'
+        });
+        
+        // Parse the time
+        const [datePart, timePart] = istTimeString.split(', ');
+        const [hour, minute, second] = timePart.split(':').map(Number);
+        
+        return hour + minute / 60 + second / 3600;
+      } catch (err) {
+        console.error("[availability] time calculation failed:", err);
+        return 12; // Fallback to noon
+      }
+    }
+
+    /**
+     * Check if current time is within online hours
+     */
+    function isOnline(decimalTime) {
+      return SCHEDULE.online.some(period => {
+        if (period.end > 24) {
+          // Period crosses midnight
+          return decimalTime >= period.start || decimalTime < (period.end - 24);
+        } else {
+          // Normal period within same day
+          return decimalTime >= period.start && decimalTime < period.end;
+        }
+      });
+    }
+
+    /**
+     * Get next boundary time (when status will change)
+     */
+    function getNextBoundary(decimalTime) {
+      const boundaries = [];
+      
+      // Add all start and end times
+      SCHEDULE.online.forEach(period => {
+        boundaries.push(period.start);
+        boundaries.push(period.end > 24 ? period.end - 24 : period.end);
+      });
+      
+      // Sort boundaries
+      boundaries.sort((a, b) => a - b);
+      
+      // Find next boundary after current time
+      for (let boundary of boundaries) {
+        if (boundary > decimalTime) {
+          return boundary;
+        }
+      }
+      
+      // If no boundary found, wrap to first boundary tomorrow
+      return boundaries[0] + 24;
+    }
+
+    /**
+     * Calculate milliseconds until next update
+     */
+    function getMsUntilNextUpdate(decimalTime) {
+      const nextBoundary = getNextBoundary(decimalTime);
+      let hoursUntil = nextBoundary - decimalTime;
+      
+      if (hoursUntil <= 0) hoursUntil += 24;
+      
+      // Convert to milliseconds, add small buffer
+      return Math.max(hoursUntil * 60 * 60 * 1000 + 1000, 1000);
+    }
+
+    /**
+     * Update the availability status
+     */
+    function updateStatus() {
+      try {
+        const decimalTime = getISTDecimalTime();
+        const online = isOnline(decimalTime);
+        const newStatus = online ? "online" : "offline";
+        
+        // Only update if status changed
+        if (newStatus !== currentStatus) {
+          const wasNull = currentStatus === null;
+          currentStatus = newStatus;
+          
+          // Update DOM
+          availability.setAttribute("data-status", newStatus);
+          statusEl.textContent = newStatus === "online" ? "AVAILABLE NOW" : "AWAY FOR NOW";
+          
+          // Cinematic transition on status change (not on initial load)
+          if (!wasNull && !reduceMotion) {
+            availability.classList.add("is-transitioning");
+            setTimeout(() => {
+              availability.classList.remove("is-transitioning");
+            }, 520);
+          }
+        }
+        
+        // Schedule next update
+        if (nextUpdateTimeout) clearTimeout(nextUpdateTimeout);
+        const msUntilNext = getMsUntilNextUpdate(decimalTime);
+        nextUpdateTimeout = setTimeout(updateStatus, msUntilNext);
+        
+      } catch (err) {
+        console.error("[availability] update failed:", err);
+        // Fallback to offline on error
+        availability.setAttribute("data-status", "offline");
+        statusEl.textContent = "AWAY FOR NOW";
+      }
+    }
+
+    /**
+     * Mobile: tap to expand/collapse schedule
+     */
+    function setupMobileInteraction() {
+      if (window.innerWidth <= 1024) {
+        availability.addEventListener("click", (e) => {
+          e.stopPropagation();
+          availability.classList.toggle("is-expanded");
+        });
+        
+        // Close when clicking outside
+        document.addEventListener("click", (e) => {
+          if (!availability.contains(e.target)) {
+            availability.classList.remove("is-expanded");
+          }
+        });
+      }
+    }
+
+    // Initialize
+    updateStatus();
+    setupMobileInteraction();
+    
+    // Re-check mobile interaction on resize
+    let resizeTimeout;
+    window.addEventListener("resize", () => {
+      clearTimeout(resizeTimeout);
+      resizeTimeout = setTimeout(setupMobileInteraction, 250);
+    });
+
+    // Periodic backup check every 5 minutes (in case setTimeout drifts)
+    setInterval(() => {
+      const decimalTime = getISTDecimalTime();
+      const shouldBeOnline = isOnline(decimalTime);
+      const actualStatus = availability.getAttribute("data-status");
+      
+      if ((shouldBeOnline && actualStatus !== "online") ||
+          (!shouldBeOnline && actualStatus !== "offline")) {
+        console.log("[availability] sync correction triggered");
+        updateStatus();
+      }
+    }, 5 * 60 * 1000);
+  }
+
+  try {
+    setupAdminAvailability();
+  } catch (err) {
+    console.error("[aasif] admin availability setup failed:", err);
+    // Fail silently — experiment failure must never break the site
+  }
+  /* =======================================================================
+     END EXPERIMENT — ADMIN AVAILABILITY SYSTEM
+     ======================================================================= */
 
   /* =======================================================================
      TIMECODE — small running counter tied to scroll depth. Purely
@@ -2512,10 +3416,7 @@ const SELF_ASSESSMENT = [
         // 3. Info panel enters 120ms after preview starts
         const info = el.querySelector('.project-info');
         if (info) {
-          const familiar = journey.hasSeenProject(el.dataset.project);
-          /* Return visits keep the same composition but lose a small
-             introductory beat, so the card feels familiar rather than new. */
-          info.style.transitionDelay = familiar ? '80ms' : '120ms';
+          info.style.transitionDelay = '120ms';
           // Clear after animation settles so hover is instant
           const clearDelay = () => {
             info.style.transitionDelay = '';
@@ -2988,12 +3889,66 @@ const SELF_ASSESSMENT = [
     console.error("[aasif] page transition setup failed:", err);
   }
   /* =======================================================================
-     INTERACTION LANGUAGE
-     Project personalities, material settling, and the returning-hero detail
-     extend the established reveal and glass systems.
+     EXPERIMENT — CUSTOM MOTION LANGUAGE
+     Five connected systems forming one coherent motion identity.
+     
+     To revert: delete this entire block (from this comment to END EXPERIMENT)
+     and delete the EXPERIMENT CSS block in the <style> tag above,
+     and remove "data-project" from projectCardHTML above.
      ======================================================================= */
   function setupExperiment() {
     if (reduceMotion) return; // full opt-out for reduced-motion users
+
+    // ── EXP 1 + 3: Motion Signature / Scroll Velocity Awareness ──────────
+    // Expose normalised scroll velocity (0–1) as --sv on <html>.
+    // The existing momentum system already tracks scrollVelocity inside
+    // setupReveal's closure, but we can't reach it from here. We instead
+    // maintain our own lightweight read that piggybacks the existing
+    // scroll listener — passive, no layout reads, single rAF write.
+    
+    let expVelocity = 0;          // 0–1 normalised
+    let expLastY    = window.scrollY;
+    let expLastT    = Date.now();
+    let expRafPending = false;
+    let expDecayTimer = null;
+
+    function expWriteVelocity() {
+      document.documentElement.style.setProperty('--sv', expVelocity.toFixed(3));
+      expRafPending = false;
+    }
+
+    window.addEventListener('scroll', () => {
+      const now  = Date.now();
+      const dy   = Math.abs(window.scrollY - expLastY);
+      const dt   = now - expLastT || 1;
+      const v    = dy / dt; // px/ms
+
+      // Smooth toward new reading, cap at 1
+      expVelocity = Math.min(expVelocity * 0.7 + (v / 4) * 0.3, 1);
+      expLastY    = window.scrollY;
+      expLastT    = now;
+
+      if (!expRafPending) {
+        expRafPending = true;
+        requestAnimationFrame(expWriteVelocity);
+      }
+
+      // Decay back toward 0 after scroll stops
+      clearTimeout(expDecayTimer);
+      expDecayTimer = setTimeout(() => {
+        function decay() {
+          if (expVelocity < 0.01) {
+            expVelocity = 0;
+            document.documentElement.style.setProperty('--sv', '0');
+            return;
+          }
+          expVelocity *= 0.88;
+          document.documentElement.style.setProperty('--sv', expVelocity.toFixed(3));
+          requestAnimationFrame(decay);
+        }
+        requestAnimationFrame(decay);
+      }, 80);
+    }, { passive: true });
 
     // ── EXP 4: Material Memory ────────────────────────────────────────────
     // When the cursor leaves a glass card, the refraction highlight
@@ -3098,6 +4053,81 @@ const SELF_ASSESSMENT = [
     }, { threshold: 0.4 });
 
     heroObserver.observe(heroSection);
+
+    // ── MATERIAL EXPERIMENT: Environmental lighting variables ────────────
+    // Extends the existing setupGlassRefraction infrastructure.
+    // Writes --lx, --ly (0–1 cursor position) and --ldist (edge proximity)
+    // to each card. Values are lerped for natural settling — NOT spring physics.
+    // setupGlassRefraction still owns --mouse-x/y (percent strings).
+    // This system owns --lx, --ly, --ldist (unit-less 0–1 numbers).
+
+    document.querySelectorAll('.project-card').forEach((card) => {
+      // Current lerped position
+      let mx = 0.5, my = 0.5;
+      // Target (raw cursor position)
+      let tx = 0.5, ty = 0.5;
+      let isHovMat = false;
+      let matRaf = null;
+
+      // Lerp factor: 0.12 → settles in ~220ms at 60Hz (fast follow while hovering)
+      // On leave: 0.05 → settles in ~700ms (physical return to neutral)
+      const FOLLOW_FACTOR = 0.12;
+      const SETTLE_FACTOR = 0.05;
+
+      function computeDist(x, y) {
+        // Distance from center, normalised: 0 = centre, 1 = corner
+        const dx = Math.abs(x - 0.5) * 2; // 0 at centre, 1 at edge
+        const dy = Math.abs(y - 0.5) * 2;
+        return Math.min(Math.sqrt(dx * dx + dy * dy) / Math.SQRT2, 1);
+      }
+
+      function matStep() {
+        const factor = isHovMat ? FOLLOW_FACTOR : SETTLE_FACTOR;
+        const dxv = tx - mx;
+        const dyv = ty - my;
+
+        if (!isHovMat && Math.abs(dxv) < 0.002 && Math.abs(dyv) < 0.002) {
+          // Settled — snap and stop
+          mx = tx; my = ty;
+          card.style.setProperty('--lx', mx.toFixed(4));
+          card.style.setProperty('--ly', my.toFixed(4));
+          card.style.setProperty('--ldist', '0');
+          matRaf = null;
+          return;
+        }
+
+        mx += dxv * factor;
+        my += dyv * factor;
+
+        const dist = computeDist(mx, my);
+        card.style.setProperty('--lx', mx.toFixed(4));
+        card.style.setProperty('--ly', my.toFixed(4));
+        card.style.setProperty('--ldist', dist.toFixed(4));
+
+        matRaf = requestAnimationFrame(matStep);
+      }
+
+      card.addEventListener('mouseenter', () => {
+        isHovMat = true;
+        // Don't snap — lerp from wherever we settled
+        if (!matRaf) matRaf = requestAnimationFrame(matStep);
+      });
+
+      card.addEventListener('mousemove', (e) => {
+        // Read rect from the existing setupGlassRefraction cache if available,
+        // otherwise compute directly. No extra getBoundingClientRect in hot path.
+        const rect = card.getBoundingClientRect();
+        tx = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+        ty = Math.max(0, Math.min(1, (e.clientY - rect.top) / rect.height));
+        if (!matRaf) matRaf = requestAnimationFrame(matStep);
+      });
+
+      card.addEventListener('mouseleave', () => {
+        isHovMat = false;
+        tx = 0.5; ty = 0.5; // return to neutral centre
+        if (!matRaf) matRaf = requestAnimationFrame(matStep);
+      });
+    });
   }
 
   try {
@@ -3107,7 +4137,317 @@ const SELF_ASSESSMENT = [
     // Fail silently — experiment failure must never affect the rest of the site
   }
   /* =======================================================================
-     END INTERACTION LANGUAGE
+     END EXPERIMENT
+     ======================================================================= */
+
+  /* =======================================================================
+     EXPERIMENT — ADAPTIVE WEBSITE MEMORY
+     TEMPORARY ONLY — easily removable.
+     
+     Two-part system:
+     1. SESSION MEMORY: Remembers visitor interactions during current session
+     2. ADAPTIVE MOTION: Subtly adjusts transitions based on familiarity
+     
+     Goal: Website feels aware without feeling like it's tracking you.
+     "Wait... it reacted to how I explored it."
+     
+     Privacy: sessionStorage only, resets on session end, no external data.
+     ======================================================================= */
+  function setupAdaptiveMemory() {
+    if (!('sessionStorage' in window)) return; // Graceful degradation
+
+    const STORAGE_KEY = 'aasif_session_memory';
+    const SCROLL_SAMPLE_INTERVAL = 150; // ms between scroll velocity samples
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SESSION MEMORY — lightweight state tracking
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    function getMemory() {
+      try {
+        const stored = sessionStorage.getItem(STORAGE_KEY);
+        return stored ? JSON.parse(stored) : {
+          visitedProjects: {},      // { "nexus-calculator": true, ... }
+          visitedSections: {},      // { "work": true, "about": true, ... }
+          projectOpens: 0,          // Total project links opened
+          scrolledToBottom: false,  // Reached footer
+          navInteracted: false,     // Used navigation
+          explorationState: 'new',  // new | exploring | familiar | deep
+          scrollBehavior: {
+            avgSpeed: 0,            // Average scroll speed
+            samples: [],            // Recent speed samples
+            pauseCount: 0,          // Times visitor paused scrolling
+            reversals: 0            // Direction changes
+          },
+          sessionStart: Date.now()
+        };
+      } catch (err) {
+        console.warn('[memory] Failed to read session:', err);
+        return null;
+      }
+    }
+
+    function saveMemory(memory) {
+      try {
+        sessionStorage.setItem(STORAGE_KEY, JSON.stringify(memory));
+      } catch (err) {
+        console.warn('[memory] Failed to save session:', err);
+      }
+    }
+
+    function updateExplorationState(memory) {
+      const projectCount = Object.keys(memory.visitedProjects).length;
+      const sectionCount = Object.keys(memory.visitedSections).length;
+      
+      if (projectCount === 0 && sectionCount <= 1) {
+        memory.explorationState = 'new';
+      } else if (projectCount <= 1 && sectionCount <= 2) {
+        memory.explorationState = 'exploring';
+      } else if (projectCount <= 2 || sectionCount <= 3) {
+        memory.explorationState = 'familiar';
+      } else {
+        memory.explorationState = 'deep';
+      }
+    }
+
+    const memory = getMemory();
+    if (!memory) return; // Failed to initialize
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SCROLL BEHAVIOR TRACKING — lightweight velocity & pattern detection
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    let lastScrollY = window.scrollY;
+    let lastScrollTime = Date.now();
+    let lastScrollDirection = 0;
+    let scrollSampleTimeout = null;
+    let scrollPauseTimeout = null;
+
+    function sampleScrollBehavior() {
+      const now = Date.now();
+      const currentY = window.scrollY;
+      const deltaY = currentY - lastScrollY;
+      const deltaT = now - lastScrollTime;
+      
+      if (deltaT > 0 && Math.abs(deltaY) > 2) {
+        // Calculate velocity (px/ms)
+        const speed = Math.abs(deltaY) / deltaT;
+        
+        // Track direction changes (reversals)
+        const currentDirection = deltaY > 0 ? 1 : -1;
+        if (lastScrollDirection !== 0 && currentDirection !== lastScrollDirection) {
+          memory.scrollBehavior.reversals++;
+        }
+        lastScrollDirection = currentDirection;
+        
+        // Keep last 10 samples for rolling average
+        memory.scrollBehavior.samples.push(speed);
+        if (memory.scrollBehavior.samples.length > 10) {
+          memory.scrollBehavior.samples.shift();
+        }
+        
+        // Update average
+        memory.scrollBehavior.avgSpeed = 
+          memory.scrollBehavior.samples.reduce((a, b) => a + b, 0) / 
+          memory.scrollBehavior.samples.length;
+      }
+      
+      lastScrollY = currentY;
+      lastScrollTime = now;
+      
+      // Detect pauses (no scroll for 1.5s)
+      clearTimeout(scrollPauseTimeout);
+      scrollPauseTimeout = setTimeout(() => {
+        memory.scrollBehavior.pauseCount++;
+        saveMemory(memory);
+      }, 1500);
+    }
+
+    window.addEventListener('scroll', () => {
+      clearTimeout(scrollSampleTimeout);
+      scrollSampleTimeout = setTimeout(sampleScrollBehavior, SCROLL_SAMPLE_INTERVAL);
+    }, { passive: true });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // PROJECT MEMORY — track which projects were explored
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    document.querySelectorAll('.project-link, .project-preview').forEach(link => {
+      link.addEventListener('click', () => {
+        const card = link.closest('.project-card');
+        if (!card) return;
+        
+        const projectSlug = card.getAttribute('data-project');
+        if (!projectSlug) return;
+        
+        const wasVisited = memory.visitedProjects[projectSlug];
+        
+        if (!wasVisited) {
+          memory.visitedProjects[projectSlug] = true;
+          memory.projectOpens++;
+          updateExplorationState(memory);
+          saveMemory(memory);
+          
+          // Mark card as visited for CSS targeting
+          card.setAttribute('data-visited', 'true');
+        }
+      });
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // SECTION MEMORY — track major section visits
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const sections = document.querySelectorAll('#work, #about, #lab, #contact');
+    const sectionObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          const sectionId = entry.target.id;
+          if (!memory.visitedSections[sectionId]) {
+            memory.visitedSections[sectionId] = true;
+            updateExplorationState(memory);
+            saveMemory(memory);
+          }
+        }
+      });
+    }, { threshold: 0.3 });
+
+    sections.forEach(section => sectionObserver.observe(section));
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // FOOTER DETECTION — reached bottom of page
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const footer = document.querySelector('.footer');
+    if (footer) {
+      const footerObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && !memory.scrolledToBottom) {
+          memory.scrolledToBottom = true;
+          saveMemory(memory);
+        }
+      }, { threshold: 0.5 });
+      
+      footerObserver.observe(footer);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // NAV INTERACTION — track navigation usage
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const navLinks = document.querySelectorAll('.nav-links a, .mobile-menu a');
+    navLinks.forEach(link => {
+      link.addEventListener('click', () => {
+        if (!memory.navInteracted) {
+          memory.navInteracted = true;
+          saveMemory(memory);
+        }
+      });
+    });
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ADAPTIVE MOTION — subtle adjustments based on familiarity
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    function applyAdaptiveMotion() {
+      const root = document.documentElement;
+      
+      // ─── EXPLORATION STATE ADAPTATION ───────────────────────────────────
+      // Gradually reduce introductory motion as visitor becomes familiar
+      
+      const stateMultipliers = {
+        new: 1.0,        // Full cinematic motion
+        exploring: 0.92, // Slightly faster
+        familiar: 0.85,  // More confident
+        deep: 0.78       // Restrained, familiar
+      };
+      
+      const multiplier = stateMultipliers[memory.explorationState] || 1.0;
+      
+      // Adjust reveal duration via CSS variable
+      const baseDuration = 860; // ms (--dur-l)
+      const adaptedDuration = Math.round(baseDuration * multiplier);
+      root.style.setProperty('--dur-l-adaptive', `${adaptedDuration}ms`);
+      
+      // ─── SCROLL BEHAVIOR ADAPTATION ─────────────────────────────────────
+      // Adjust based on visitor's scroll style
+      
+      const avgSpeed = memory.scrollBehavior.avgSpeed || 0;
+      let scrollProfile = 'normal';
+      
+      if (avgSpeed < 0.3) {
+        scrollProfile = 'slow'; // Deliberate explorer
+      } else if (avgSpeed > 1.2) {
+        scrollProfile = 'fast'; // Quick scanner
+      }
+      
+      // Adjust transition characteristics
+      const scrollMultipliers = {
+        slow: 1.08,   // Slightly more time for slow explorers
+        normal: 1.0,
+        fast: 0.88    // Tighter for fast scrollers
+      };
+      
+      const scrollMult = scrollMultipliers[scrollProfile];
+      const hoverDuration = Math.round(180 * scrollMult); // --dur-hover
+      root.style.setProperty('--dur-hover-adaptive', `${hoverDuration}ms`);
+      
+      // ─── PROJECT FAMILIARITY ────────────────────────────────────────────
+      // Mark previously visited projects for CSS targeting
+      
+      document.querySelectorAll('.project-card').forEach(card => {
+        const projectSlug = card.getAttribute('data-project');
+        if (projectSlug && memory.visitedProjects[projectSlug]) {
+          card.setAttribute('data-visited', 'true');
+        }
+      });
+      
+      // Store exploration state on root for CSS access
+      root.setAttribute('data-exploration', memory.explorationState);
+      root.setAttribute('data-scroll-profile', scrollProfile);
+    }
+
+    // Apply adaptive motion immediately and on window focus
+    // (in case visitor returns after switching tabs)
+    applyAdaptiveMotion();
+    
+    window.addEventListener('focus', () => {
+      const freshMemory = getMemory();
+      if (freshMemory) {
+        Object.assign(memory, freshMemory);
+        applyAdaptiveMotion();
+      }
+    });
+
+    // Periodic state save (every 5 seconds if changed)
+    let lastSavedState = JSON.stringify(memory);
+    setInterval(() => {
+      const currentState = JSON.stringify(memory);
+      if (currentState !== lastSavedState) {
+        saveMemory(memory);
+        applyAdaptiveMotion();
+        lastSavedState = currentState;
+      }
+    }, 5000);
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // DEBUG (remove in production)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    // Expose memory state to console for testing (comment out to hide)
+    if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+      console.log('[memory] Session initialized:', memory);
+      window.__debugMemory = () => console.log('[memory] Current state:', getMemory());
+    }
+  }
+
+  try {
+    setupAdaptiveMemory();
+  } catch (err) {
+    console.error('[aasif] adaptive memory setup failed:', err);
+    // Fail silently — experiment must never break the site
+  }
+  /* =======================================================================
+     END EXPERIMENT — ADAPTIVE WEBSITE MEMORY
      ======================================================================= */
 
   /* ======================================================================= 
