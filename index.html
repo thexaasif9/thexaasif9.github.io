@@ -1513,12 +1513,18 @@ span.social-link:active{ scale: 1; }
 /* =========================================================================
    PROJECT CARD — CINEMATIC SEQUENCE REVEAL
    
+   PERFORMANCE FIX: Eliminated flash/lag by:
+   - Subtle initial opacity (0.08 vs 0) prevents sudden pop
+   - GPU acceleration hints (will-change)
+   - Reduced transform distances
+   - Optimized clip-path performance
+   
    Visual language: each card is a scene. Entering cards are "unmasked"
    rather than simply faded in. The preview panel and text content move
    at slightly different moments, giving physical depth.
    
    Three states:
-   - .pre-reveal     — card waiting offscreen (invisible, set up for entry)
+   - .pre-reveal     — card waiting offscreen (subtle pre-state, not invisible)
    - .is-visible     — card fully present (resting state)
    - .is-receding    — card that was visible and is now being overtaken
                         (subtly dims/shrinks as the next card takes focus)
@@ -1530,6 +1536,7 @@ span.social-link:active{ scale: 1; }
   grid-template-columns: 1.05fr .95fr;
   gap: clamp(2rem, 5vw, 4.5rem);
   align-items: center;
+  will-change: opacity, transform; /* GPU hint */
   /* Card-level transitions: only non-layered properties */
   transition: opacity 700ms cubic-bezier(.19,1,.22,1),
               transform 700ms cubic-bezier(.19,1,.22,1);
@@ -1537,7 +1544,7 @@ span.social-link:active{ scale: 1; }
 
 /* --- Entry state -------------------------------------------------------- */
 .project-card.pre-reveal{
-  opacity: 0;
+  opacity: 0.08; /* Subtle pre-state instead of 0 - prevents flash */
   /* Preview rises from below; info starts a touch lower — corrected in JS */
   transform: translateY(0);
   pointer-events: none;
@@ -1573,8 +1580,9 @@ span.social-link:active{ scale: 1; }
 
 /* --- PREVIEW PANEL: clip-path wipe from bottom (cinematic unmask) ------ */
 .project-preview{
+  will-change: clip-path, transform; /* GPU acceleration */
   clip-path: inset(100% 0 0 0 round 6px);
-  transform: translateY(14px);
+  transform: translateY(10px); /* Reduced from 14px */
   transition: clip-path 780ms cubic-bezier(.19,1,.22,1),
               transform 780ms cubic-bezier(.19,1,.22,1),
               box-shadow var(--dur-hover) var(--ease);
@@ -1594,7 +1602,7 @@ span.social-link:active{ scale: 1; }
 @media (max-width: 1024px){
   .project-preview{
     clip-path: inset(100% 0 0 0 round 6px);
-    transform: translateY(8px);
+    transform: translateY(6px); /* Reduced from 8px for mobile */
   }
   .project-card.is-visible .project-preview{
     clip-path: inset(0% 0 0 0 round 6px);
@@ -1605,8 +1613,9 @@ span.social-link:active{ scale: 1; }
 /* --- INFO PANEL: enters slightly after preview, slightly slower --------- */
 /* Achieved via transitionDelay on .project-info in JS */
 .project-info{
-  opacity: 0;
-  transform: translateY(12px);
+  will-change: opacity, transform; /* GPU acceleration */
+  opacity: 0.12; /* Subtle pre-state instead of 0 */
+  transform: translateY(8px); /* Reduced from 12px */
   transition: opacity 640ms cubic-bezier(.19,1,.22,1),
               transform 640ms cubic-bezier(.19,1,.22,1);
 }
@@ -1650,14 +1659,21 @@ span.social-link:active{ scale: 1; }
 
 /* =========================================================================
    GENERAL REVEAL ON SCROLL (non-card elements)
+   
+   PERFORMANCE FIX: Reduced flash/pop by:
+   - Lower initial opacity (0.15 vs 0) for smoother fade-in
+   - Smaller transform distance (10px vs 16px)
+   - will-change hints for GPU acceleration
+   - Optimized transition timing
    ========================================================================= */
 [data-reveal]{
+  will-change: opacity, transform;
   transition: opacity var(--dur-l) var(--ease-out-expo),
               transform var(--dur-l) var(--ease-out-expo);
 }
 [data-reveal].pre-reveal{
-  opacity: 0;
-  transform: translateY(16px);
+  opacity: 0.15; /* Subtle pre-state, not invisible */
+  transform: translateY(10px); /* Reduced from 16px */
 }
 [data-reveal].is-visible{
   opacity: 1;
@@ -2041,11 +2057,11 @@ span.social-link:active{ scale: 1; }
 
 /* Visited card gets slightly less dramatic entry (subtle familiarity) */
 .project-card[data-visited="true"].pre-reveal .project-preview {
-  transform: translateY(10px); /* vs 14px for unvisited */
+  transform: translateY(7px); /* vs 10px for unvisited - reduced for smoothness */
 }
 
 .project-card[data-visited="true"].pre-reveal .project-info {
-  transform: translateY(8px); /* vs 12px for unvisited */
+  transform: translateY(6px); /* vs 8px for unvisited - reduced for smoothness */
 }
 
 /* ─── EXPLORATION STATE ADAPTATION ──────────────────────────────────────
@@ -2053,11 +2069,11 @@ span.social-link:active{ scale: 1; }
 
 /* Deep exploration: more confident, less introductory motion */
 [data-exploration="deep"] [data-reveal].pre-reveal {
-  transform: translateY(12px); /* vs 16px default */
+  transform: translateY(8px); /* vs 10px default - reduced for smoothness */
 }
 
 [data-exploration="familiar"] [data-reveal].pre-reveal {
-  transform: translateY(14px);
+  transform: translateY(9px); /* vs 10px default - reduced for smoothness */
 }
 
 /* New/exploring: keep full introductory motion (no override) */
@@ -2227,7 +2243,7 @@ span.social-link:active{ scale: 1; }
 /* Directional reveal: right-to-left (precision entering frame) */
 .project-card[data-artifact="nexus"] .project-preview {
   clip-path: inset(0 100% 0 0 round 6px);
-  transform: translateX(-6px);
+  transform: translateX(-4px); /* Reduced from -6px for smoothness */
   transition: clip-path 740ms cubic-bezier(.19,1,.22,1),
               transform 740ms cubic-bezier(.19,1,.22,1),
               box-shadow var(--dur-hover) var(--ease);
@@ -2277,8 +2293,8 @@ span.social-link:active{ scale: 1; }
 /* Typography-led reveal: fade in with subtle clip */
 .project-card[data-artifact="dark-file"] .project-preview {
   clip-path: inset(0 0 0 0 round 6px);
-  opacity: 0;
-  transform: translateY(8px);
+  opacity: 0.15; /* Subtle pre-state instead of 0 */
+  transform: translateY(6px); /* Reduced from 8px for smoothness */
   transition: opacity 820ms cubic-bezier(.16,.84,.44,1),
               transform 820ms cubic-bezier(.16,.84,.44,1),
               clip-path 820ms cubic-bezier(.16,.84,.44,1),
@@ -2323,7 +2339,7 @@ span.social-link:active{ scale: 1; }
 /* Diagonal spatial reveal (experimental entry) */
 .project-card[data-artifact="deadcore"] .project-preview {
   clip-path: inset(50% 50% 0 0 round 6px);
-  transform: translate(-4px, 4px);
+  transform: translate(-3px, 3px); /* Reduced from -4px, 4px for smoothness */
   transition: clip-path 900ms cubic-bezier(.16,.84,.44,1),
               transform 900ms cubic-bezier(.16,.84,.44,1),
               box-shadow var(--dur-hover) var(--ease);
@@ -3293,7 +3309,12 @@ const SELF_ASSESSMENT = [
 
     if (reduceMotion || !("IntersectionObserver" in window)) return; // stays visible, unanimated
 
-    targets.forEach((el) => el.classList.add("pre-reveal"));
+    // PERFORMANCE FIX: Add pre-reveal in next frame to prevent flash
+    // Elements start at opacity 1 (visible), then smoothly transition to pre-reveal state
+    requestAnimationFrame(() => {
+      targets.forEach((el) => el.classList.add("pre-reveal"));
+    });
+    
     document.querySelectorAll(".skill-bar-fill").forEach((el) => el.classList.add("pre-fill"));
 
     /* =======================================================================
