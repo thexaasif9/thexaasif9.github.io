@@ -482,17 +482,50 @@ a:focus-visible, button:focus-visible{
   text-transform: uppercase;
   margin-block: 1.25rem 1.75rem;
 }
-.hero-headline .line{
+/* =========================================================================
+   HERO HEADLINE — AUTOMATIC CINEMATIC ENTRANCE
+   Fires on page load with no JS, no scrolling, no interaction required.
+   Each .line container has overflow:hidden acting as the reveal mask.
+   ========================================================================= */
+@keyframes line-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.hero-headline .line {
   display: block;
-  overflow: hidden;
-  transition: opacity var(--dur-l) var(--ease-out-expo),
-              transform var(--dur-l) var(--ease-out-expo);
+  overflow: hidden; /* mask — text rises through this boundary */
 }
-.hero-headline .line.pre-reveal{
-  opacity: 0;
-  transform: translateY(40px);
+
+/* Each line animates independently with a stagger via animation-delay.
+   animation-fill-mode: both holds the from-state before the delay fires
+   and the to-state after the animation ends. */
+.hero-headline .line:nth-child(1) {
+  animation: line-reveal 800ms cubic-bezier(.19,1,.22,1) 100ms both;
 }
-.hero-headline .accent{ color: var(--accent); }
+.hero-headline .line:nth-child(2) {
+  animation: line-reveal 800ms cubic-bezier(.19,1,.22,1) 260ms both;
+}
+.hero-headline .line:nth-child(3) {
+  animation: line-reveal 800ms cubic-bezier(.19,1,.22,1) 420ms both;
+}
+
+/* Reduced motion: instant reveal, no animation */
+@media (prefers-reduced-motion: reduce) {
+  .hero-headline .line:nth-child(1),
+  .hero-headline .line:nth-child(2),
+  .hero-headline .line:nth-child(3) {
+    animation: none;
+  }
+}
+
+.hero-headline .accent { color: var(--accent); }
 
 .hero-sub{
   font-family: var(--f-mono);
@@ -623,12 +656,7 @@ a:focus-visible, button:focus-visible{
   grid-template-columns: 1.05fr .95fr;
   gap: clamp(2rem, 5vw, 4.5rem);
   align-items: center;
-  transition: opacity var(--dur-l) var(--ease-out-expo),
-              transform var(--dur-l) var(--ease-out-expo);
 }
-.project-card:hover .project-title{ translate: 3px 0; }
-.project-card.pre-reveal{ opacity: 0; transform: translateY(20px); }
-.project-card.is-visible{ opacity: 1; transform: translateY(0); }
 .project-card:nth-child(even){ direction: rtl; }
 .project-card:nth-child(even) > *{ direction: ltr; }
 
@@ -713,7 +741,6 @@ a:focus-visible, button:focus-visible{
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: box-shadow var(--dur-hover) var(--ease);
 }
 .project-card:hover .project-preview{
   box-shadow: 0 0 0 1px rgba(0, 0, 0, .28), 0 20px 40px -20px rgba(0, 0, 0, .24);
@@ -781,11 +808,16 @@ a:focus-visible, button:focus-visible{
   padding: clamp(2rem, 4vw, 3rem);
   margin-bottom: clamp(1.25rem, 3vw, 2rem);
   isolation: isolate;
-  transition: translate var(--dur-hover) var(--ease),
-              scale var(--dur-hover) var(--ease),
-              border-color var(--dur-m) var(--ease),
-              background var(--dur-m) var(--ease),
-              box-shadow var(--dur-m) var(--ease);
+  /* Transition covers BOTH reveal (opacity/transform) and hover states.
+     Two speeds: reveal uses --dur-l for cinematic entry,
+     hover uses --dur-hover for snappy tactile response. */
+  transition: opacity    var(--dur-l)     var(--ease-out-expo),
+              transform  var(--dur-l)     var(--ease-out-expo),
+              translate  var(--dur-hover) var(--ease),
+              scale      var(--dur-hover) var(--ease),
+              border-color var(--dur-m)   var(--ease),
+              background   var(--dur-m)   var(--ease),
+              box-shadow   var(--dur-m)   var(--ease);
 }
 .project-card:hover{
   translate: 0 -2px;
@@ -1246,7 +1278,145 @@ span.social-link:active{ scale: 1; }
 }
 
 /* =========================================================================
-   REVEAL ON SCROLL
+   PROJECT CARD — CINEMATIC SEQUENCE REVEAL
+   
+   Visual language: each card is a scene. Entering cards are "unmasked"
+   rather than simply faded in. The preview panel and text content move
+   at slightly different moments, giving physical depth.
+   
+   Three states:
+   - .pre-reveal     — card waiting offscreen (invisible, set up for entry)
+   - .is-visible     — card fully present (resting state)
+   - .is-receding    — card that was visible and is now being overtaken
+                        (subtly dims/shrinks as the next card takes focus)
+   ========================================================================= */
+
+/* --- Resting state (already visible, not animating) ------------------- */
+.project-card{
+  display: grid;
+  grid-template-columns: 1.05fr .95fr;
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  /* Card-level transitions: only non-layered properties */
+  transition: opacity 700ms cubic-bezier(.19,1,.22,1),
+              transform 700ms cubic-bezier(.19,1,.22,1);
+}
+
+/* --- Entry state -------------------------------------------------------- */
+.project-card.pre-reveal{
+  opacity: 0;
+  /* Preview rises from below; info starts a touch lower — corrected in JS */
+  transform: translateY(0);
+  pointer-events: none;
+}
+
+/* --- Fully revealed ----------------------------------------------------- */
+.project-card.is-visible{
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* --- Receding state: previous card fades back as next takes focus ------ */
+.project-card.is-receding{
+  opacity: 0.42;
+  transform: scale(0.992) translateY(-6px);
+  transition: opacity 600ms cubic-bezier(.16,.84,.44,1),
+              transform 600ms cubic-bezier(.16,.84,.44,1);
+}
+.project-card.is-receding .project-preview{
+  filter: saturate(0.7) brightness(0.94);
+  transition: filter 600ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* Restore receding card once the next one is settled */
+.project-card.is-receding-restore{
+  opacity: 1;
+  transform: scale(1) translateY(0);
+  filter: none;
+  transition: opacity 500ms cubic-bezier(.16,.84,.44,1),
+              transform 500ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* --- PREVIEW PANEL: clip-path wipe from bottom (cinematic unmask) ------ */
+.project-preview{
+  clip-path: inset(100% 0 0 0 round 6px);
+  transform: translateY(14px);
+  transition: clip-path 780ms cubic-bezier(.19,1,.22,1),
+              transform 780ms cubic-bezier(.19,1,.22,1),
+              box-shadow var(--dur-hover) var(--ease);
+}
+.project-card.is-visible .project-preview{
+  clip-path: inset(0% 0 0 0 round 6px);
+  transform: translateY(0);
+}
+/* Receding cards: preview stays unclipped but gets filter treatment */
+.project-card.is-receding .project-preview{
+  clip-path: inset(0% 0 0 0 round 6px);
+  transform: translateY(0);
+  transition: filter 600ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* --- PREVIEW PANEL: override for reduced movement on mobile ------------ */
+@media (max-width: 1024px){
+  .project-preview{
+    clip-path: inset(100% 0 0 0 round 6px);
+    transform: translateY(8px);
+  }
+  .project-card.is-visible .project-preview{
+    clip-path: inset(0% 0 0 0 round 6px);
+    transform: translateY(0);
+  }
+}
+
+/* --- INFO PANEL: enters slightly after preview, slightly slower --------- */
+/* Achieved via transitionDelay on .project-info in JS */
+.project-info{
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 640ms cubic-bezier(.19,1,.22,1),
+              transform 640ms cubic-bezier(.19,1,.22,1);
+}
+.project-card.is-visible .project-info{
+  opacity: 1;
+  transform: translateY(0);
+}
+.project-card.is-receding .project-info{
+  opacity: 0.45;
+  transition: opacity 600ms cubic-bezier(.16,.84,.44,1);
+}
+/* Restore */
+.project-card.is-receding-restore .project-info{
+  opacity: 1;
+  transition: opacity 500ms cubic-bezier(.16,.84,.44,1),
+              transform 500ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* --- TITLE: enters last, giving the sequence a deliberate beat --------- */
+/* The title's own transition delay is injected by JS */
+.project-title{
+  font-family: var(--f-display);
+  font-weight: 650;
+  font-size: clamp(1.9rem, 3.6vw, 2.9rem);
+  text-transform: uppercase;
+  line-height: 1.02;
+  margin-bottom: .75rem;
+  transition: translate var(--dur-hover) var(--ease-out-expo);
+}
+.project-card:hover .project-title{ translate: 4px 0; }
+
+/* Reset all per-element delays once the card is in pre-reveal
+   (i.e. don't let stale delays linger on re-arm) */
+.project-card.pre-reveal .project-info,
+.project-card.pre-reveal .project-preview{
+  transition: none;
+}
+
+.project-card:nth-child(even){ direction: rtl; }
+.project-card:nth-child(even) > *{ direction: ltr; }
+
+/* =========================================================================
+   GENERAL REVEAL ON SCROLL (non-card elements)
    ========================================================================= */
 [data-reveal]{
   transition: opacity var(--dur-l) var(--ease-out-expo),
@@ -1261,17 +1431,60 @@ span.social-link:active{ scale: 1; }
   transform: translateY(0);
 }
 
+/* =========================================================================
+   REDUCED MOTION — simplified experience for all animated systems
+   ========================================================================= */
 @media (prefers-reduced-motion: reduce){
-  [data-reveal].pre-reveal,
-  .project-card.pre-reveal{ opacity: 1 !important; transform: none !important; }
+  /* Generic reveals: appear instantly */
+  [data-reveal].pre-reveal{ opacity: 1 !important; transform: none !important; }
+
+  /* Project cards: no cinematic sequence, instant reveal */
+  .project-card.pre-reveal{
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+  }
+  .project-card.pre-reveal .project-info{
+    opacity: 1 !important;
+    transform: none !important;
+  }
+  .project-card.pre-reveal .project-preview{
+    clip-path: none !important;
+    transform: none !important;
+  }
+  .project-card.is-receding,
+  .project-card.is-receding .project-info,
+  .project-card.is-receding .project-preview{
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .project-preview{
+    clip-path: none !important;
+    transform: none !important;
+    transition: box-shadow var(--dur-hover) var(--ease) !important;
+  }
+  .project-info{
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  /* Glass card: static surface */
+  .project-card{
+    transition: border-color var(--dur-s) var(--ease),
+                background var(--dur-s) var(--ease),
+                box-shadow var(--dur-s) var(--ease) !important;
+  }
   .project-card:hover{ translate: none; scale: none; }
   .project-card:hover .project-title{ translate: none; }
   .project-card:hover .project-preview::before{ transform: none; }
+  .project-card.is-in-view{ transition: none; }
+  .project-card::after{ display: none; }
+  .atmosphere{ transition: none !important; transform: none !important; }
 }
 
-/* =========================================================================
-   RESPONSIVE
-   ========================================================================= */
+
 @media (max-width: 1024px){
   .nav-links{ display: none; }
   .nav-timecode{ display: none; }
@@ -1305,6 +1518,157 @@ span.social-link:active{ scale: 1; }
 
   .about-categories{ grid-template-columns: 1fr; }
 }
+
+/* =========================================================================
+   EXPERIMENT — CUSTOM MOTION LANGUAGE
+   All experimental styles are isolated here.
+   To revert: delete everything between the two EXPERIMENT markers.
+   ========================================================================= */
+
+/* ── EXP 1: Motion Signature — expose scroll velocity to CSS ───────────── */
+/* --sv (scroll velocity) is written by JS onto documentElement.
+   0 = idle/slow, 1 = fast. Used by cards and cursor ring. */
+
+/* ── EXP 2: Project-specific transition personalities ──────────────────── */
+/* Each project gets a slightly different clip-path reveal axis.
+   All share the same underlying motion language — just a subtle variation. */
+
+/* NEXUS Calculator (01): standard bottom wipe — precision, clean entry */
+.project-card[data-project="nexus-calculator"] .project-preview {
+  clip-path: inset(100% 0 0 0 round 6px);
+  transform: translateY(14px);
+}
+.project-card[data-project="nexus-calculator"].is-visible .project-preview {
+  clip-path: inset(0% 0 0 0 round 6px);
+  transform: translateY(0);
+}
+
+/* The Dark File (02): right-to-left wipe — narrative, directional, heavy */
+.project-card[data-project="the-dark-file"] .project-preview {
+  clip-path: inset(0 100% 0 0 round 6px);
+  transform: translateX(-8px);
+  transition: clip-path 820ms cubic-bezier(.19,1,.22,1),
+              transform 820ms cubic-bezier(.19,1,.22,1),
+              box-shadow var(--dur-hover) var(--ease);
+}
+.project-card[data-project="the-dark-file"].is-visible .project-preview {
+  clip-path: inset(0 0% 0 0 round 6px);
+  transform: translateX(0);
+}
+/* Dark File info: slightly longer settle — weight of the subject */
+.project-card[data-project="the-dark-file"] .project-info {
+  transition: opacity 740ms cubic-bezier(.19,1,.22,1),
+              transform 740ms cubic-bezier(.19,1,.22,1);
+}
+
+/* NEXUS Speed (03): top-down reveal — kinetic, data rushing in */
+.project-card[data-project="nexus-speed"] .project-preview {
+  clip-path: inset(0 0 100% 0 round 6px);
+  transform: translateY(-10px);
+  transition: clip-path 700ms cubic-bezier(.19,1,.22,1),
+              transform 700ms cubic-bezier(.19,1,.22,1),
+              box-shadow var(--dur-hover) var(--ease);
+}
+.project-card[data-project="nexus-speed"].is-visible .project-preview {
+  clip-path: inset(0 0 0% 0 round 6px);
+  transform: translateY(0);
+}
+/* NEXUS Speed info: slightly faster — responsive, technical */
+.project-card[data-project="nexus-speed"] .project-info {
+  transition: opacity 560ms cubic-bezier(.19,1,.22,1),
+              transform 560ms cubic-bezier(.19,1,.22,1);
+}
+
+/* DEADCORE (04 / lab): diagonal inset reveal — liminal, unsettling */
+.project-card[data-project="deadcore"] .project-preview {
+  clip-path: inset(60% 0 0 60% round 6px);
+  transform: translate(-6px, 6px);
+  transition: clip-path 880ms cubic-bezier(.16,.84,.44,1),
+              transform 880ms cubic-bezier(.16,.84,.44,1),
+              box-shadow var(--dur-hover) var(--ease);
+}
+.project-card[data-project="deadcore"].is-visible .project-preview {
+  clip-path: inset(0% 0 0 0% round 6px);
+  transform: translate(0, 0);
+}
+/* DEADCORE info: slowest, heaviest — atmosphere over speed */
+.project-card[data-project="deadcore"] .project-info {
+  transition: opacity 820ms cubic-bezier(.16,.84,.44,1),
+              transform 820ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* Reduced motion: all personalities collapse to no clip/transform */
+@media (prefers-reduced-motion: reduce) {
+  .project-card[data-project] .project-preview {
+    clip-path: none !important;
+    transform: none !important;
+    transition: box-shadow var(--dur-hover) var(--ease) !important;
+  }
+  .project-card[data-project] .project-info {
+    transition: none !important;
+  }
+}
+/* Mobile: use simpler bottom wipe for all to reduce movement */
+@media (max-width: 1024px) {
+  .project-card[data-project] .project-preview {
+    clip-path: inset(100% 0 0 0 round 6px) !important;
+    transform: translateY(8px) !important;
+    transition: clip-path 700ms cubic-bezier(.19,1,.22,1),
+                transform 700ms cubic-bezier(.19,1,.22,1),
+                box-shadow var(--dur-hover) var(--ease) !important;
+  }
+  .project-card[data-project].is-visible .project-preview {
+    clip-path: inset(0% 0 0 0 round 6px) !important;
+    transform: translateY(0) !important;
+  }
+}
+
+/* ── EXP 3: Scroll velocity awareness — cursor ring ───────────────────── */
+/* The cursor ring subtly thins and gains opacity during fast scrolling.
+   --sv is a 0–1 value written by JS. We can't interpolate custom props
+   directly in standard CSS, so JS writes inline style vars and the ring
+   uses them via calc(). */
+.cursor {
+  /* EXP: velocity-responsive ring — border thickens slightly at rest */
+  outline-width: calc(1px + var(--sv, 0) * 0px); /* reserved for future */
+}
+
+/* ── EXP 4: Material memory — slow highlight decay on card leave ────────── */
+/* When the cursor leaves a card, the refraction highlight fades out slowly
+   rather than resetting instantly. This is the "warm glass memory" effect.
+   Achieved by adding a longer transition on ::after's opacity for the
+   leave state only — the "enter" direction remains instant via hover. */
+
+/* The default ::after transition is 360ms. On mouseleave we want ~800ms.
+   We toggle a class .exp-settling on the card from JS for this. */
+.project-card.exp-settling::after {
+  opacity: 0;
+  transition: opacity 800ms cubic-bezier(.16,.84,.44,1) !important;
+}
+/* Also slow the refraction center return */
+.project-card.exp-settling {
+  /* CSS custom property transition not universally supported,
+     so JS lerps --mouse-x/y back to 50% over 800ms instead */
+}
+
+/* ── EXP 5: Hidden layer — hero visited state ──────────────────────────── */
+/* After the user scrolls away from the hero and returns, the headline
+   gets a data-visited attribute. This makes the accent line slightly
+   more prominent — a quiet acknowledgement of return. */
+.hero-headline[data-visited] .accent {
+  text-shadow: 0 0 32px rgba(155, 131, 132, 0.18);
+  transition: text-shadow 1200ms cubic-bezier(.16,.84,.44,1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-headline[data-visited] .accent {
+    text-shadow: none;
+    transition: none;
+  }
+}
+
+/* =========================================================================
+   END EXPERIMENT
+   ========================================================================= */
 
 </style>
 </head>
@@ -1373,9 +1737,9 @@ span.social-link:active{ scale: 1; }
       <p class="eyebrow" data-reveal>INTRO</p>
 
       <h1 class="hero-headline">
-        <span class="line" data-reveal>I BUILD.</span>
-        <span class="line" data-reveal>I CREATE.</span>
-        <span class="line accent" data-reveal>I EXPLORE.</span>
+        <span class="line">I BUILD.</span>
+        <span class="line">I CREATE.</span>
+        <span class="line accent">I EXPLORE.</span>
       </h1>
 
       <p class="hero-sub" data-reveal>Student · Creator · Experimental Web Developer</p>
@@ -1639,8 +2003,12 @@ const SELF_ASSESSMENT = [
     const noteHTML = item.note ? `<p class="project-note">${item.note}</p>` : "";
     // Subtle creator credit for NEXUS projects only
     const creatorHTML = item.creator ? `<span class="project-creator">${item.creator}</span>` : "";
+    // EXP: data-project slug used by CSS personality rules
+    const projectSlug = item.title.toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '');
     return `
-      <article class="project-card tone-${item.tone === "lab" ? "lab" : "default"}" data-reveal>
+      <article class="project-card tone-${item.tone === "lab" ? "lab" : "default"}" data-reveal data-project="${projectSlug}">
         <div class="project-info">
           <span class="project-index">${item.index}</span>
           ${creatorHTML}
@@ -1967,30 +2335,119 @@ const SELF_ASSESSMENT = [
       }, 60);
     }, { passive: true });
 
+    /* =======================================================================
+       CINEMATIC SEQUENCE REVEAL — PROJECT CARDS
+       
+       Each card reveal is choreographed in layers:
+         1. Card becomes visible (opacity 0 → 1, card-level)
+         2. Preview panel unmasked via clip-path wipe (0ms delay)
+         3. Info panel rises in (120ms delay — slightly after preview)
+       
+       The previously-visible card is tagged .is-receding so it subtly
+       dims as the next card takes over, creating a genuine handoff feel.
+       Scroll direction is tracked so the exit direction matches entry.
+       ======================================================================= */
+
+    // Track which card was last fully visible for the handoff effect
+    let lastVisibleCard = null;
+    let recessTimer     = null;
+
     function revealElement(el) {
-      el.classList.remove("pre-reveal");
-      el.classList.add("is-visible");
+      if (el.classList.contains('project-card')) {
+        // --- HANDOFF: previous card recedes as this one enters -----------
+        if (lastVisibleCard && lastVisibleCard !== el) {
+          lastVisibleCard.classList.remove('is-receding-restore');
+          lastVisibleCard.classList.add('is-receding');
+          // Auto-restore after the handoff completes
+          clearTimeout(recessTimer);
+          recessTimer = setTimeout(() => {
+            if (lastVisibleCard) {
+              lastVisibleCard.classList.remove('is-receding');
+              lastVisibleCard.classList.add('is-receding-restore');
+              // Clean up restore class after it settles
+              setTimeout(() => {
+                if (lastVisibleCard) {
+                  lastVisibleCard.classList.remove('is-receding-restore');
+                }
+              }, 520);
+            }
+          }, 900);
+        }
+        lastVisibleCard = el;
+
+        // --- LAYERED ENTRY -----------------------------------------------
+        // 1. Reset to entry state (no transitions while re-arming)
+        el.classList.remove('pre-reveal');
+
+        // 2. Preview: clip-path wipe starts immediately
+        //    (transition is already set in CSS)
+        // No transitionDelay needed — CSS handles the preview timing
+
+        // 3. Info panel enters 120ms after preview starts
+        const info = el.querySelector('.project-info');
+        if (info) {
+          info.style.transitionDelay = '120ms';
+          // Clear after animation settles so hover is instant
+          const clearDelay = () => {
+            info.style.transitionDelay = '';
+            info.removeEventListener('transitionend', clearDelay);
+          };
+          info.addEventListener('transitionend', clearDelay, { once: true });
+        }
+
+        el.classList.add('is-visible');
+        el.style.transitionDelay = '';
+
+      } else {
+        // Non-card elements: standard reveal
+        el.classList.remove('pre-reveal');
+        el.classList.add('is-visible');
+      }
 
       if (el.classList.contains("skill-row")) {
         const fill = el.querySelector(".skill-bar-fill");
         if (fill) fill.classList.remove("pre-fill");
         animateSkillNumber(el);
       }
-
-      // DO NOT unobserve — we need to track when it leaves for replay
     }
 
     function hideElement(el) {
-      // Element has left viewport — arm it for replay
-      el.classList.add("pre-reveal");
-      el.classList.remove("is-visible");
-      
-      // Re-arm skill bar fill animation
+      // Re-arm for replay
+      const info    = el.querySelector && el.querySelector('.project-info');
+      const preview = el.querySelector && el.querySelector('.project-preview');
+
+      // Strip transitions before re-arming so we snap to hidden immediately
+      // (CSS rule .pre-reveal .project-info/.project-preview { transition: none })
+      el.classList.remove('is-visible', 'is-receding', 'is-receding-restore');
+
+      if (info)    info.style.transitionDelay = '';
+      if (preview) preview.style.transitionDelay = '';
+
+      // Small RAF gap so the browser registers the class removal before
+      // adding pre-reveal — prevents the transition playing in reverse
+      requestAnimationFrame(() => {
+        el.classList.add('pre-reveal');
+      });
+
+      if (el.classList.contains('project-card') && lastVisibleCard === el) {
+        lastVisibleCard = null;
+      }
+
       if (el.classList.contains("skill-row")) {
         const fill = el.querySelector(".skill-bar-fill");
         if (fill) fill.classList.add("pre-fill");
       }
     }
+
+    /* Supporting hero elements (sub, cta, meta) enter after the headline.
+       Delays are relative to page load; the headline animation finishes
+       at ~420ms + 800ms = ~1220ms for the last line, so these follow after. */
+    const heroSub = document.querySelector(".hero-sub");
+    if (heroSub) heroSub.style.transitionDelay = "520ms";
+    const heroMeta = document.querySelector(".hero-meta");
+    if (heroMeta) heroMeta.style.transitionDelay = "640ms";
+    const heroCta = document.querySelector(".hero .btn-ghost");
+    if (heroCta) heroCta.style.transitionDelay = "580ms";
 
     const io = new IntersectionObserver(
       (entries) => {
@@ -2010,17 +2467,6 @@ const SELF_ASSESSMENT = [
       { threshold: 0.15, rootMargin: "0px 0px -8% 0px" }
     );
     targets.forEach((el) => io.observe(el));
-
-    /* Hero entrance: staggered lines first, supporting elements follow */
-    document.querySelectorAll(".hero-headline .line").forEach((el, i) => {
-      el.style.transitionDelay = `${80 + i * 120}ms`;
-    });
-    const heroSub = document.querySelector(".hero-sub");
-    if (heroSub) heroSub.style.transitionDelay = "460ms";
-    const heroMeta = document.querySelector(".hero-meta");
-    if (heroMeta) heroMeta.style.transitionDelay = "560ms";
-    const heroCta = document.querySelector(".hero .btn-ghost");
-    if (heroCta) heroCta.style.transitionDelay = "520ms";
 
     /* Mobile safety net: on some phones, the browser's address bar
        collapsing/expanding right after load shifts the viewport height,
@@ -2412,6 +2858,183 @@ const SELF_ASSESSMENT = [
   } catch (err) {
     console.error("[aasif] page transition setup failed:", err);
   }
+  /* =======================================================================
+     EXPERIMENT — CUSTOM MOTION LANGUAGE
+     Five connected systems forming one coherent motion identity.
+     
+     To revert: delete this entire block (from this comment to END EXPERIMENT)
+     and delete the EXPERIMENT CSS block in the <style> tag above,
+     and remove "data-project" from projectCardHTML above.
+     ======================================================================= */
+  function setupExperiment() {
+    if (reduceMotion) return; // full opt-out for reduced-motion users
+
+    // ── EXP 1 + 3: Motion Signature / Scroll Velocity Awareness ──────────
+    // Expose normalised scroll velocity (0–1) as --sv on <html>.
+    // The existing momentum system already tracks scrollVelocity inside
+    // setupReveal's closure, but we can't reach it from here. We instead
+    // maintain our own lightweight read that piggybacks the existing
+    // scroll listener — passive, no layout reads, single rAF write.
+    
+    let expVelocity = 0;          // 0–1 normalised
+    let expLastY    = window.scrollY;
+    let expLastT    = Date.now();
+    let expRafPending = false;
+    let expDecayTimer = null;
+
+    function expWriteVelocity() {
+      document.documentElement.style.setProperty('--sv', expVelocity.toFixed(3));
+      expRafPending = false;
+    }
+
+    window.addEventListener('scroll', () => {
+      const now  = Date.now();
+      const dy   = Math.abs(window.scrollY - expLastY);
+      const dt   = now - expLastT || 1;
+      const v    = dy / dt; // px/ms
+
+      // Smooth toward new reading, cap at 1
+      expVelocity = Math.min(expVelocity * 0.7 + (v / 4) * 0.3, 1);
+      expLastY    = window.scrollY;
+      expLastT    = now;
+
+      if (!expRafPending) {
+        expRafPending = true;
+        requestAnimationFrame(expWriteVelocity);
+      }
+
+      // Decay back toward 0 after scroll stops
+      clearTimeout(expDecayTimer);
+      expDecayTimer = setTimeout(() => {
+        function decay() {
+          if (expVelocity < 0.01) {
+            expVelocity = 0;
+            document.documentElement.style.setProperty('--sv', '0');
+            return;
+          }
+          expVelocity *= 0.88;
+          document.documentElement.style.setProperty('--sv', expVelocity.toFixed(3));
+          requestAnimationFrame(decay);
+        }
+        requestAnimationFrame(decay);
+      }, 80);
+    }, { passive: true });
+
+    // ── EXP 4: Material Memory ────────────────────────────────────────────
+    // When the cursor leaves a glass card, the refraction highlight
+    // decays slowly (~800ms) rather than cutting to 50% instantly.
+    // We lerp --mouse-x/y back to 50% over 800ms via rAF.
+    // The .exp-settling class (CSS) forces the ::after opacity transition
+    // to 800ms instead of the default 360ms, so the fade matches the lerp.
+
+    if (!finePointer) return; // material memory is cursor-only
+
+    document.querySelectorAll('.project-card').forEach((card) => {
+      let lerpX = 50, lerpY = 50;       // current lerped position
+      let targetX = 50, targetY = 50;   // where we're going
+      let lerpRaf = null;
+      let isHovered = false;
+
+      function lerpStep() {
+        const dx = targetX - lerpX;
+        const dy = targetY - lerpY;
+
+        if (Math.abs(dx) < 0.15 && Math.abs(dy) < 0.15) {
+          // Settled — snap and stop
+          lerpX = targetX;
+          lerpY = targetY;
+          card.style.setProperty('--mouse-x', `${lerpX}%`);
+          card.style.setProperty('--mouse-y', `${lerpY}%`);
+          lerpRaf = null;
+
+          if (!isHovered) {
+            // Cursor is gone and settled — clean up settling state
+            card.classList.remove('exp-settling');
+          }
+          return;
+        }
+
+        // Smooth toward target — 0.07 factor → ~800ms decay at 60Hz
+        lerpX += dx * 0.07;
+        lerpY += dy * 0.07;
+        card.style.setProperty('--mouse-x', `${lerpX}%`);
+        card.style.setProperty('--mouse-y', `${lerpY}%`);
+        lerpRaf = requestAnimationFrame(lerpStep);
+      }
+
+      card.addEventListener('mouseenter', () => {
+        isHovered = true;
+        card.classList.remove('exp-settling');
+        if (lerpRaf) cancelAnimationFrame(lerpRaf);
+        // Tracking is handled by the existing setupGlassRefraction —
+        // we don't duplicate mousemove; we only manage the leave decay.
+      });
+
+      card.addEventListener('mouseleave', () => {
+        isHovered = false;
+        // Target the center — lerp will slowly drift there
+        targetX = 50;
+        targetY = 50;
+        // Read current position from CSS var to start from where we are
+        const computedX = parseFloat(
+          card.style.getPropertyValue('--mouse-x') || '50'
+        );
+        const computedY = parseFloat(
+          card.style.getPropertyValue('--mouse-y') || '50'
+        );
+        lerpX = computedX;
+        lerpY = computedY;
+
+        // Activate slow CSS opacity decay on ::after
+        card.classList.add('exp-settling');
+
+        if (lerpRaf) cancelAnimationFrame(lerpRaf);
+        lerpRaf = requestAnimationFrame(lerpStep);
+      });
+    });
+
+    // ── EXP 5: Hidden Interaction Layer ───────────────────────────────────
+    // When the user scrolls away from the hero section and then returns
+    // to the top, the hero headline gets data-visited="true" — which CSS
+    // uses to apply a very subtle warm glow to "I EXPLORE." (the accent line).
+    // The user discovers this naturally if they scroll back up.
+    
+    const heroSection   = document.querySelector('.hero');
+    const heroHeadline  = document.querySelector('.hero-headline');
+    if (!heroSection || !heroHeadline) return;
+
+    let heroWasVisible   = true;  // page starts at hero
+    let heroHasLeft      = false; // true once hero leaves viewport
+
+    const heroObserver = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          heroWasVisible = true;
+          // If this is a return visit (hero left before), mark it
+          if (heroHasLeft) {
+            heroHeadline.setAttribute('data-visited', 'true');
+          }
+        } else {
+          heroWasVisible = false;
+          heroHasLeft    = true; // hero has now left at least once
+          // Don't remove data-visited once set — it's a persistent state
+        }
+      });
+    }, { threshold: 0.4 });
+
+    heroObserver.observe(heroSection);
+  }
+
+  try {
+    setupExperiment();
+  } catch (err) {
+    console.error('[aasif] experiment setup failed:', err);
+    // Fail silently — experiment failure must never affect the rest of the site
+  }
+  /* =======================================================================
+     END EXPERIMENT
+     ======================================================================= */
+
   /* ======================================================================= 
      END EDITORIAL PAGE TRANSITION
      ======================================================================= */
