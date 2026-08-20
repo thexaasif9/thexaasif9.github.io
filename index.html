@@ -613,6 +613,31 @@ a:focus-visible, button:focus-visible{
   background: var(--accent);
   animation: pulse 2.2s ease-in-out infinite;
 }
+.availability-status{ color: var(--ink); }
+.availability-status[data-state="offline"]{ color: var(--muted); }
+.availability-toggle{
+  padding: 0;
+  color: var(--accent);
+  font: inherit;
+  letter-spacing: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.availability-schedule{
+  grid-column: 1 / -1;
+  max-width: 42ch;
+  margin-top: -.2rem;
+  color: var(--muted);
+  font-family: var(--f-mono);
+  font-size: .66rem;
+  line-height: 1.7;
+  letter-spacing: .06em;
+}
+.availability-schedule[hidden]{ display: none; }
+.status-label:has(.availability-status[data-state="offline"]) .dot{
+  animation: none;
+  opacity: .52;
+}
 @keyframes pulse{
   0%, 100%{ opacity: 1; transform: scale(1); }
   50%{ opacity: .35; transform: scale(.7); }
@@ -1520,14 +1545,10 @@ span.social-link:active{ scale: 1; }
 }
 
 /* =========================================================================
-   EXPERIMENT — CUSTOM MOTION LANGUAGE
-   All experimental styles are isolated here.
-   To revert: delete everything between the two EXPERIMENT markers.
+   INTERACTION LANGUAGE
+   Project personalities and material settling share the existing motion
+   system; no separate animation engine is introduced here.
    ========================================================================= */
-
-/* ── EXP 1: Motion Signature — expose scroll velocity to CSS ───────────── */
-/* --sv (scroll velocity) is written by JS onto documentElement.
-   0 = idle/slow, 1 = fast. Used by cards and cursor ring. */
 
 /* ── EXP 2: Project-specific transition personalities ──────────────────── */
 /* Each project gets a slightly different clip-path reveal axis.
@@ -1623,16 +1644,6 @@ span.social-link:active{ scale: 1; }
   }
 }
 
-/* ── EXP 3: Scroll velocity awareness — cursor ring ───────────────────── */
-/* The cursor ring subtly thins and gains opacity during fast scrolling.
-   --sv is a 0–1 value written by JS. We can't interpolate custom props
-   directly in standard CSS, so JS writes inline style vars and the ring
-   uses them via calc(). */
-.cursor {
-  /* EXP: velocity-responsive ring — border thickens slightly at rest */
-  outline-width: calc(1px + var(--sv, 0) * 0px); /* reserved for future */
-}
-
 /* ── EXP 4: Material memory — slow highlight decay on card leave ────────── */
 /* When the cursor leaves a card, the refraction highlight fades out slowly
    rather than resetting instantly. This is the "warm glass memory" effect.
@@ -1667,7 +1678,7 @@ span.social-link:active{ scale: 1; }
 }
 
 /* =========================================================================
-   END EXPERIMENT
+   END INTERACTION LANGUAGE
    ========================================================================= */
 
 </style>
@@ -1758,7 +1769,15 @@ span.social-link:active{ scale: 1; }
   <!-- ============================ NOW ============================ -->
   <section class="now">
     <div class="container now-inner">
-      <p class="status-label" data-reveal><span class="dot"></span> STATUS</p>
+      <div class="status-label" data-reveal>
+        <span class="dot" aria-hidden="true"></span>
+        <span>ADMIN / <span class="availability-status" data-availability-state aria-live="polite">CHECKING</span></span>
+        <button class="availability-toggle" type="button" aria-expanded="false" aria-controls="availabilitySchedule">SCHEDULE</button>
+      </div>
+      <p class="availability-schedule" id="availabilitySchedule" hidden>
+        ONLINE / 10:00–17:00 &middot; 19:30–03:00 IST<br />
+        OFFLINE / 03:00–10:00 &middot; 17:00–19:30 IST
+      </p>
       <h2 class="now-heading" data-reveal>NOW</h2>
       <p class="now-text" data-reveal>
         Learning web development. Experimenting with visual storytelling.
@@ -2115,6 +2134,113 @@ const SELF_ASSESSMENT = [
   }
 
   /* =======================================================================
+     ADMIN AVAILABILITY + SESSION JOURNEY
+     Local-only, deliberately small state. It records no personal data and
+     never leaves the browser. The visual response is limited to familiar
+     project handoffs and slightly calmer repeat section reveals.
+     ======================================================================= */
+  function setupAvailability() {
+    const stateEl = document.querySelector("[data-availability-state]");
+    const toggle = document.querySelector(".availability-toggle");
+    const schedule = document.getElementById("availabilitySchedule");
+    if (!stateEl) return;
+
+    function getKolkataMinutes(date = new Date()) {
+      const parts = new Intl.DateTimeFormat("en-GB", {
+        timeZone: "Asia/Kolkata", hour: "2-digit", minute: "2-digit", hourCycle: "h23"
+      }).formatToParts(date);
+      const values = Object.fromEntries(parts.map(({ type, value }) => [type, value]));
+      return Number(values.hour) * 60 + Number(values.minute);
+    }
+
+    function updateAvailability() {
+      const minutes = getKolkataMinutes();
+      const online = (minutes >= 600 && minutes < 1020) || minutes >= 1170 || minutes < 180;
+      stateEl.textContent = online ? "ONLINE" : "OFFLINE";
+      stateEl.dataset.state = online ? "online" : "offline";
+    }
+
+    updateAvailability();
+    const delayToNextMinute = (60 - new Date().getSeconds()) * 1000 + 50;
+    window.setTimeout(() => {
+      updateAvailability();
+      window.setInterval(updateAvailability, 60000);
+    }, delayToNextMinute);
+
+    if (toggle && schedule) {
+      toggle.addEventListener("click", () => {
+        const open = schedule.hidden;
+        schedule.hidden = !open;
+        toggle.setAttribute("aria-expanded", String(open));
+      });
+    }
+  }
+
+  function setupSessionJourney() {
+    const key = "aasif-portfolio-journey-v1";
+    const blank = { projects: [], sections: [], navigated: false, reachedEnd: false };
+    let state = { ...blank };
+
+    try {
+      const saved = sessionStorage.getItem(key);
+      if (saved) state = { ...blank, ...JSON.parse(saved) };
+    } catch (_) { /* Storage can be unavailable; the site remains fully functional. */ }
+
+    const save = () => {
+      try { sessionStorage.setItem(key, JSON.stringify(state)); } catch (_) {}
+    };
+    const remember = (bucket, value) => {
+      if (!state[bucket].includes(value)) {
+        state[bucket].push(value);
+        save();
+      }
+    };
+
+    document.documentElement.dataset.exploration = state.projects.length >= 3 ? "deep" : state.projects.length ? "familiar" : "new";
+    document.querySelectorAll(".project-card").forEach((card) => {
+      const project = card.dataset.project;
+      if (state.projects.includes(project)) card.classList.add("is-familiar");
+      card.querySelectorAll("a").forEach((link) => link.addEventListener("click", () => {
+        remember("projects", project);
+        card.classList.add("is-familiar");
+        document.documentElement.dataset.exploration = state.projects.length >= 3 ? "deep" : "familiar";
+      }));
+    });
+
+    document.querySelectorAll(".nav-links a, .mobile-menu a, .btn-ghost").forEach((link) => {
+      link.addEventListener("click", () => { state.navigated = true; save(); });
+    });
+
+    if ("IntersectionObserver" in window) {
+      const sections = document.querySelectorAll("main section[id]");
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) remember("sections", entry.target.id);
+        });
+      }, { threshold: 0.45 });
+      sections.forEach((section) => observer.observe(section));
+    }
+
+    const contact = document.getElementById("contact");
+    if (contact && "IntersectionObserver" in window) {
+      new IntersectionObserver((entries) => {
+        if (entries.some((entry) => entry.isIntersecting)) {
+          state.reachedEnd = true;
+          save();
+        }
+      }, { threshold: 0.2 }).observe(contact);
+    }
+
+    return {
+      hasSeenSection: (id) => state.sections.includes(id),
+      hasSeenProject: (id) => state.projects.includes(id)
+    };
+  }
+
+  try { setupAvailability(); } catch (err) { console.error("[aasif] availability setup failed:", err); }
+  const journey = setupSessionJourney();
+
+  /* =======================================================================
      SCROLL DISPATCH — one listener, batched to at most once per frame.
      Nav state and the timecode both register into this instead of each
      adding their own "scroll" listener.
@@ -2386,7 +2512,10 @@ const SELF_ASSESSMENT = [
         // 3. Info panel enters 120ms after preview starts
         const info = el.querySelector('.project-info');
         if (info) {
-          info.style.transitionDelay = '120ms';
+          const familiar = journey.hasSeenProject(el.dataset.project);
+          /* Return visits keep the same composition but lose a small
+             introductory beat, so the card feels familiar rather than new. */
+          info.style.transitionDelay = familiar ? '80ms' : '120ms';
           // Clear after animation settles so hover is instant
           const clearDelay = () => {
             info.style.transitionDelay = '';
@@ -2859,66 +2988,12 @@ const SELF_ASSESSMENT = [
     console.error("[aasif] page transition setup failed:", err);
   }
   /* =======================================================================
-     EXPERIMENT — CUSTOM MOTION LANGUAGE
-     Five connected systems forming one coherent motion identity.
-     
-     To revert: delete this entire block (from this comment to END EXPERIMENT)
-     and delete the EXPERIMENT CSS block in the <style> tag above,
-     and remove "data-project" from projectCardHTML above.
+     INTERACTION LANGUAGE
+     Project personalities, material settling, and the returning-hero detail
+     extend the established reveal and glass systems.
      ======================================================================= */
   function setupExperiment() {
     if (reduceMotion) return; // full opt-out for reduced-motion users
-
-    // ── EXP 1 + 3: Motion Signature / Scroll Velocity Awareness ──────────
-    // Expose normalised scroll velocity (0–1) as --sv on <html>.
-    // The existing momentum system already tracks scrollVelocity inside
-    // setupReveal's closure, but we can't reach it from here. We instead
-    // maintain our own lightweight read that piggybacks the existing
-    // scroll listener — passive, no layout reads, single rAF write.
-    
-    let expVelocity = 0;          // 0–1 normalised
-    let expLastY    = window.scrollY;
-    let expLastT    = Date.now();
-    let expRafPending = false;
-    let expDecayTimer = null;
-
-    function expWriteVelocity() {
-      document.documentElement.style.setProperty('--sv', expVelocity.toFixed(3));
-      expRafPending = false;
-    }
-
-    window.addEventListener('scroll', () => {
-      const now  = Date.now();
-      const dy   = Math.abs(window.scrollY - expLastY);
-      const dt   = now - expLastT || 1;
-      const v    = dy / dt; // px/ms
-
-      // Smooth toward new reading, cap at 1
-      expVelocity = Math.min(expVelocity * 0.7 + (v / 4) * 0.3, 1);
-      expLastY    = window.scrollY;
-      expLastT    = now;
-
-      if (!expRafPending) {
-        expRafPending = true;
-        requestAnimationFrame(expWriteVelocity);
-      }
-
-      // Decay back toward 0 after scroll stops
-      clearTimeout(expDecayTimer);
-      expDecayTimer = setTimeout(() => {
-        function decay() {
-          if (expVelocity < 0.01) {
-            expVelocity = 0;
-            document.documentElement.style.setProperty('--sv', '0');
-            return;
-          }
-          expVelocity *= 0.88;
-          document.documentElement.style.setProperty('--sv', expVelocity.toFixed(3));
-          requestAnimationFrame(decay);
-        }
-        requestAnimationFrame(decay);
-      }, 80);
-    }, { passive: true });
 
     // ── EXP 4: Material Memory ────────────────────────────────────────────
     // When the cursor leaves a glass card, the refraction highlight
@@ -3032,7 +3107,7 @@ const SELF_ASSESSMENT = [
     // Fail silently — experiment failure must never affect the rest of the site
   }
   /* =======================================================================
-     END EXPERIMENT
+     END INTERACTION LANGUAGE
      ======================================================================= */
 
   /* ======================================================================= 
