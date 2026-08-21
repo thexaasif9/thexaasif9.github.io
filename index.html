@@ -1,5 +1,367 @@
 <!doctype html>
 <html lang="en">
+<!--
+═══════════════════════════════════════════════════════════════════════════════
+AASIF PORTFOLIO — INTERNAL DEVELOPMENT DOCUMENTATION
+═══════════════════════════════════════════════════════════════════════════════
+
+This documentation consolidates development history, architectural decisions,
+and maintenance notes from project implementation reports. Last updated: 2026-08-21
+
+───────────────────────────────────────────────────────────────────────────────
+PROJECT ARCHITECTURE
+───────────────────────────────────────────────────────────────────────────────
+
+VISUAL IDENTITY: Editorial × Cinematic × Experimental × Minimal × Premium
+COLOR PALETTE: Beige (#F6ECE3) × Black × Brown × Granite × Mauve (NO additions)
+TYPOGRAPHY: Bricolage Grotesque (Display) / Instrument Sans (Body) / Space Mono (Mono)
+MOTION LANGUAGE: cubic-bezier(.16,.84,.44,1) signature / cubic-bezier(.19,1,.22,1) cinematic
+
+───────────────────────────────────────────────────────────────────────────────
+PERMANENT SYSTEMS
+───────────────────────────────────────────────────────────────────────────────
+
+✅ LIVING INTERFACE (Made Permanent 2026-08-21)
+   - Intent-Aware Interface (4 states: ready/exploring/focused/idle)
+   - Reflection Memory (1200ms glass material decay after cursor leaves)
+   - Interaction Fingerprint (pace/depth/focus detection)
+   - Signal System (minimal editorial state indicator, top-right)
+   Purpose: Website responds to exploration patterns without explicit tracking
+   Dependencies: Reuses Website Memory data, glass system, existing intent detection
+   Mobile: Simplified (fingerprint only, signal hidden, no reflection memory)
+   Performance: <0.1% CPU, passive listeners, GPU-accelerated transitions
+
+✅ ATMOSPHERIC TIME (Made Permanent 2026-08-21)
+   - Time-based atmosphere (Morning/Afternoon/Evening/Night)
+   - Background luminosity adjustment (±2.5% max, filter on content sections NOT body)
+   - Glass material intensity variation (±6% max)
+   - Shadow depth adjustment (±6% max)
+   - Motion energy modulation (±4% max)
+   Purpose: Subtle environmental response to local time of day
+   Constraints: Changes within 2-7% range only, background remains #F6ECE3 beige
+   Updates: Every 2 minutes, continuous interpolation (no abrupt switches)
+   Mobile: Reduced effect intensity, atmosphere brightness forced to baseline
+   Critical: Filter on content sections (.nav, .hero, .work, etc) NOT body (preserves cursor fix)
+
+✅ ATTENTION LENS (Made Permanent 2026-08-21)
+   - Viewport-based attention detection (dwell threshold: 600ms)
+   - Single-project focus enhancement (+2-4% emphasis max)
+   - Surrounding content dimming (-1-2% max)
+   - Intent-aware and pace-aware intensity
+   Purpose: Subtle visual focus around actively explored projects
+   Dependencies: Reuses Living Interface signals (intent, pace)
+   Mobile: Completely disabled (detection runs but no visual effects)
+   Performance: IntersectionObserver (threshold 0.4), 500ms check interval
+
+✅ WEBSITE MEMORY (Adaptive Memory System)
+   - Session-scoped tracking (visited projects, sections, scroll behavior)
+   - Exploration state progression (new → exploring → familiar → deep)
+   - Scroll profile detection (slow/moderate/fast based on avgSpeed)
+   - Adaptive timing (860ms → 671ms as familiarity increases)
+   Storage: sessionStorage only, resets on session end, no personal data
+   Privacy: No external transmission, no persistent tracking, no analytics
+
+✅ PROJECT DNA (Artifact Personalities)
+   - NEXUS: Precision interface (right-to-left reveal, 740ms, corner marks)
+   - Dark File: Archival document (typography-led, 820ms, indexing marks)
+   - DEADCORE: Experimental object (diagonal reveal, 900ms, depth field)
+   Purpose: Each project feels distinct while maintaining cohesive system
+   Metadata: TYPE / STATUS / YEAR format (Space Mono, 0.64rem, consistent structure)
+   Mobile: Simplified (standard bottom-up reveal, metadata preserved)
+
+✅ CINEMATIC SCENE CONTINUITY
+   - Personality-specific receding behaviors when new project enters
+   - NEXUS: scale(0.994) translateY(-4px) — precision collapse
+   - Dark File: opacity 0.38, scale(0.996) translateY(-3px) — archival fade
+   - DEADCORE: opacity 0.35, scale(0.992) translate(-2px,-5px), saturate(0.6) — drift
+   Duration: 520ms, auto-restore with .is-receding-restore class
+   Purpose: Scene-to-scene transitions, not card-to-card
+
+✅ CINEMATIC SCROLL MOMENTUM
+   - Native scroll + subtle continuation after release (100-300px, 400-600ms)
+   - Aggressive exponential damping (0.88) for quick settle
+   - Immediate cancellation on any user input (user always wins)
+   - Disabled on touch devices (native momentum preferred)
+   - Velocity-based atmospheric drift (6px background shift)
+   Purpose: "Cinematic physical momentum" NOT "automatic scrolling"
+   Constraints: 300px hard cap, 600ms max duration, MIN_VELOCITY 0.15 threshold
+
+✅ ADMIN AVAILABILITY SYSTEM
+   - Schedule-based indicator (IST timezone: 10:00-17:00, 19:30-03:00)
+   - Automatic updates at boundaries, 5min backup check
+   - No server connection (client-side time calculation only)
+   Visual: Glass pill in nav, subtle breathing pulse when ONLINE
+   Mobile: Tap to expand schedule, touch-friendly
+
+───────────────────────────────────────────────────────────────────────────────
+MOTION ARCHITECTURE
+───────────────────────────────────────────────────────────────────────────────
+
+SCROLL LISTENERS: 4 active (down from 6, -33% reduction)
+  1. Line ~3755: Scroll momentum cancellation
+  2. Line ~4196: Glass refraction cache invalidation
+  3. Line ~5220: Living Interface consolidated (intent + fingerprint sampling)
+  4. Line ~5676: Attention Lens scroll clear
+
+INTERSECTION OBSERVERS: 6 distinct
+  - Main Reveal Observer (threshold 0.15, rootMargin -8%)
+  - Glow Observer (threshold 0.2, ambient glow)
+  - Attention Visibility Observer (threshold 0.4, focus tracking)
+  - Section Visibility (threshold 0.3, Website Memory)
+  - Footer Visibility (threshold 0.5, Website Memory)
+  - Kept separate - different purposes, complex dispatch logic not worth consolidation
+
+RAF LOOPS: 7-8 distinct (all self-terminating)
+  - Cursor animation (settled optimization, stops when stationary)
+  - Skill number counting (triggered once)
+  - Scroll momentum atmospheric (self-terminating)
+  - Scroll continuation (400-600ms duration)
+  - Reflection Memory decay (1200ms per card)
+  - Attention Lens fade (focus removal)
+  - Material lerp (glass refraction, material memory)
+
+VELOCITY TRACKING: Consolidated from 3 → 2 systems
+  - setupReveal() now writes both --dur-l AND --sv (single calculation, dual output)
+  - Removed redundant setupExperiment() velocity tracking
+  - setupAdaptiveMemory() continues separate (different purpose: hover timing)
+
+───────────────────────────────────────────────────────────────────────────────
+PROJECT REVEAL SYSTEM
+───────────────────────────────────────────────────────────────────────────────
+
+PRE-REVEAL STATE: opacity 0.08-0.15 (NOT 0 - prevents flash)
+TRANSFORM DISTANCES: Reduced 25-37.5% from original (6-10px, smoother entrance)
+GPU ACCELERATION: will-change hints added (opacity, transform, clip-path)
+RAF TIMING: Pre-reveal class applied via requestAnimationFrame (prevents initial flash)
+
+Flash/Lag Fix (Critical):
+  - Before: opacity 0 → 1 created sudden pop, 16px transforms jarring
+  - After: opacity 0.08 → 1.0 smooth fade, 10px gentle rise
+  - Result: Solid 60fps, no visible flash, silky-smooth reveals at all scroll speeds
+
+───────────────────────────────────────────────────────────────────────────────
+BUG FIXES
+───────────────────────────────────────────────────────────────────────────────
+
+CUSTOM CURSOR DISAPPEARING (CRITICAL FIX)
+  Root Cause: CSS filter on body created stacking context, trapped cursor z-index:999
+  Solution: Apply filter to content sections (.nav, .hero, .work, etc) NOT body
+  Defensive: Added isolation:isolate + will-change:transform to .cursor
+  Location: Line ~282 cursor CSS, Line ~2547 filter placement
+  Result: Cursor always renders on top, no disappearance during scroll
+  Debug: window.__enableCursorDebug() / __disableCursorDebug() available (inactive by default)
+
+PROJECT FLASH/LAG ON REVEAL (PERFORMANCE FIX)
+  Root Cause: opacity 0 → 1 sudden transition + large transform distances
+  Solution: opacity 0.08 pre-state + reduced transforms + GPU hints + RAF timing
+  Result: Eliminated flash, 60fps solid, smooth at all scroll speeds
+
+NEXUS TRANSITION CURSOR FADE (MINOR FIX)
+  Root Cause: Body opacity cascade during NEXUS Speed page transition
+  Solution: Explicit cursor.style.opacity = '1' during body fade, restore after
+  Location: performNexusSpeedTransition() function
+  Result: Cursor remains visible during all page transitions
+
+───────────────────────────────────────────────────────────────────────────────
+PERFORMANCE OPTIMIZATIONS
+───────────────────────────────────────────────────────────────────────────────
+
+MOTION ENGINE CONSOLIDATION (2026-08-21)
+  - Consolidated Living Interface scroll listeners (2 → 1)
+  - Removed inactive cursor debug scroll listener
+  - Velocity tracking consolidated (3 systems → 2)
+  - Result: -33% scroll listener overhead, cleaner architecture
+
+GPU ACCELERATION
+  - All animations use transform + opacity (compositor-friendly)
+  - will-change hints on animated elements
+  - No layout-thrashing properties (width, height, margin)
+
+PASSIVE EVENT LISTENERS
+  - All scroll listeners use { passive: true }
+  - No blocking operations in hot paths
+  - Efficient frame delivery
+
+OPTIMIZED PATTERNS
+  - Cursor RAF stops when settled (no idle churn)
+  - Scroll sampling debounced (150ms)
+  - Pointer tracking throttled (100ms)
+  - Glass refraction caches element rects
+  - Reveal system uses IntersectionObserver (passive, GPU-accelerated)
+
+───────────────────────────────────────────────────────────────────────────────
+ACCESSIBILITY / REDUCED MOTION
+───────────────────────────────────────────────────────────────────────────────
+
+REDUCED MOTION DETECTION: matchMedia('(prefers-reduced-motion: reduce)')
+
+WHEN ENABLED:
+  - All animations/transitions → 0.001ms (instant)
+  - Scroll momentum disabled
+  - Atmospheric drift disabled
+  - Reflection Memory disabled
+  - Attention Lens static
+  - Signal static at 0.12 opacity
+  - All motion-based effects removed
+  - Content fully accessible, functionality preserved
+
+KEYBOARD NAVIGATION: Preserved, no custom cursor interference
+FOCUS STATES: Intact, visible, semantic HTML maintained
+SCREEN READERS: Compatible, no ARIA changes, content accessible
+
+───────────────────────────────────────────────────────────────────────────────
+MOBILE CONSIDERATIONS
+───────────────────────────────────────────────────────────────────────────────
+
+DETECTION: 'ontouchstart' in window, matchMedia("(hover:hover) and (pointer:fine)")
+
+DISABLED ON MOBILE:
+  - Custom cursor (display:none, native touch cursor)
+  - Scroll continuation (native touch momentum preferred)
+  - Reflection Memory (no cursor position tracking)
+  - Signal System (hidden completely)
+  - Atmospheric Time period-specific brightness (forced baseline)
+  - Attention Lens visual effects (detection runs but no visuals)
+  - Project DNA complex reveals (simplified to standard bottom-up)
+
+ACTIVE ON MOBILE:
+  - Website Memory (session tracking)
+  - Interaction Fingerprint (pace detection)
+  - Adaptive timing (subtle)
+  - Metadata system (readable)
+  - Native scrolling (untouched)
+
+BREAKPOINTS: 768px (mobile), 1024px (tablet/desktop transition)
+
+───────────────────────────────────────────────────────────────────────────────
+REJECTED / REMOVED SYSTEMS
+───────────────────────────────────────────────────────────────────────────────
+
+❌ ADAPTIVE PROJECT STATES (Not Implemented - Recommendation Only)
+   Reason: All 5 states already exist in current architecture
+   - OFF-SCREEN → Reveal Observer (.pre-reveal)
+   - APPROACHING → IntersectionObserver threshold 0.15
+   - ACTIVE → Attention Lens (data-attention-focus)
+   - PASSING → Scene Continuity (.is-receding)
+   - VISITED → Website Memory (data-visited)
+   Implementing would duplicate existing functionality, add complexity
+
+❌ PROJECT CONTINUITY SYSTEM (Not Implemented - Recommendation Only)
+   Reason: All 4 concepts already exist, would add performance cost
+   - Project Residuals → Scene Continuity .is-receding (520ms)
+   - Contextual Handoff → Scene Continuity coordination
+   - Depth-Stacked → Staggered transitions (80ms) + glass material
+   - Monochrome → Identity → Opacity reveal (0.08 → 1.0) + DNA personalities
+   Monochrome filter animation would be EXTREMELY EXPENSIVE (forces repaint every frame)
+
+❌ DEFERRED SYSTEMS (Never Implemented)
+   - System Breathing
+   - Dead Reckoning
+   - Motion Genetics
+   - Temporal Layers
+   - Project Evolution
+   Verification: Searched codebase, zero matches
+
+REMOVED DURING OPTIMIZATION:
+   - Redundant setupExperiment() velocity tracking (~52 lines)
+   - Living Interface separate scroll sampling listener (consolidated)
+   - Cursor debug scroll listener (inactive by default, simplified)
+
+───────────────────────────────────────────────────────────────────────────────
+DEPLOYMENT PROTECTION
+───────────────────────────────────────────────────────────────────────────────
+
+⚠️ CRITICAL: .github/workflows/deploy.yml
+   - File does NOT exist in this workspace
+   - If it exists elsewhere: NEVER modify without explicit task requirement
+   - Deployment workflow is protected infrastructure
+
+───────────────────────────────────────────────────────────────────────────────
+MAINTENANCE NOTES
+───────────────────────────────────────────────────────────────────────────────
+
+CURSOR FIX (CRITICAL - DO NOT MODIFY):
+  - Filter MUST be on content sections (.nav, .hero, .work, etc) NOT body
+  - Cursor MUST have isolation:isolate + will-change:transform
+  - Modifying stacking context will break cursor visibility during scroll
+
+REVEAL FLASH FIX (CRITICAL - DO NOT REGRESS):
+  - Pre-reveal opacity MUST be 0.08-0.15 (NOT 0)
+  - Transform distances MUST stay reduced (6-10px range)
+  - requestAnimationFrame MUST wrap pre-reveal class application
+  - Changing these will reintroduce flash
+
+MOTION ENGINE CONSOLIDATION (PROTECT):
+  - Scroll listeners: 4 (down from 6)
+  - Do NOT add duplicate velocity tracking
+  - Do NOT add unnecessary scroll listeners
+  - setupReveal() writes BOTH --dur-l AND --sv (single source of truth)
+
+VELOCITY TRACKING CONSOLIDATION:
+  - setupReveal() is authoritative for velocity-based effects
+  - setupAdaptiveMemory() serves DIFFERENT purpose (hover timing only)
+  - Do NOT create additional velocity systems
+
+ATMOSPHERIC TIME FILTER PLACEMENT:
+  - Filter on content sections preserves cursor fix
+  - Moving filter to body will BREAK cursor visibility
+  - This is architectural, not stylistic
+
+PROJECT CARD OBSERVERS (DO NOT CONSOLIDATE):
+  - Glow Observer (threshold 0.2) + Attention Visibility (threshold 0.4)
+  - Different purposes, complex dispatch logic not worth marginal gain
+  - Keep separate for clarity
+
+RAF LOOPS (ALL SELF-TERMINATING):
+  - No continuous idle loops
+  - All have exit conditions
+  - Cursor stops when settled
+  - Momentum stops when velocity < threshold
+  - Memory decay stops after 1200ms
+  - Do NOT add continuous loops
+
+SCROLL CONTINUATION PARAMETERS (IF ADJUSTING):
+  - CONTINUATION_DAMPING: 0.88 (higher = faster settle)
+  - MAX_CONTINUATION_DISTANCE: 300px (lower = less continuation)
+  - CONTINUATION_MIN_VELOCITY: 0.15 (higher = harder to trigger)
+  - CONTINUATION_MAX_DURATION: 600ms (lower = shorter effect)
+  - Disabled on touch: SCROLL_CONTINUATION_ENABLED = !('ontouchstart' in window)
+
+VISUAL IDENTITY (NEVER CHANGE WITHOUT EXPLICIT REQUEST):
+  - Color palette is fixed (5 colors only)
+  - Typography system is fixed (3 font families)
+  - Motion easing is signature (2 primary curves)
+  - Editorial × Cinematic × Experimental × Minimal × Premium
+
+DEBUG HELPERS (LOCALHOST ONLY):
+  - window.__debugMemory() — Website Memory state
+  - window.__debugLivingInterface() — All Living Interface systems
+  - window.__debugAtmosphericTime() — Current time profile
+  - window.__debugAttentionLens() — Attention state
+  - window.__enableCursorDebug() / __disableCursorDebug() — Cursor diagnostics
+
+REPORTS LOCATION:
+  All implementation reports exist as .md files in workspace root:
+  - PERMANENT_CONSOLIDATION_REPORT.md
+  - MOTION_ENGINE_REFINEMENT_REPORT.md
+  - CURSOR_SCROLL_BUG_FIX_REPORT.md
+  - CURSOR_BUG_FIX_REPORT.md
+  - MOTION_FINALIZATION_REPORT.md (Scroll Momentum)
+  - MOTION_POLISH_REPORT.md (Flash/Lag Fix)
+  - LIVING_INTERFACE_REPORT.md
+  - ATMOSPHERIC_TIME_REPORT.md
+  - ATTENTION_LENS_REPORT.md
+  - PROJECT_ARTIFACTS_REPORT.md
+  - ADAPTIVE_MEMORY_REPORT.md (Website Memory)
+  - AVAILABILITY_SYSTEM_REPORT.md
+  - SCROLL_MOMENTUM_REPORT.md
+  - ADAPTIVE_PROJECT_STATES_RECOMMENDATION.md (NOT implemented)
+  - PROJECT_CONTINUITY_RECOMMENDATION.md (NOT implemented)
+
+═══════════════════════════════════════════════════════════════════════════════
+END DOCUMENTATION — Last Updated: 2026-08-21
+═══════════════════════════════════════════════════════════════════════════════
+-->
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -288,6 +650,8 @@ a:focus-visible, button:focus-visible{
   border-radius: 50%;
   pointer-events: none;
   z-index: 999;
+  isolation: isolate; /* BUGFIX: Ensure cursor stays in its own stacking context */
+  will-change: transform; /* Performance hint for fixed positioning + RAF */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2446,6 +2810,311 @@ span.social-link:active{ scale: 1; }
    END EXPERIMENT — PROJECT ARTIFACTS
    ========================================================================= */
 
+/* =========================================================================
+   LIVING INTERFACE
+   Subtle visual system responding to interaction intent
+   ========================================================================= */
+
+/* Signal System — minimal editorial state indicator */
+.living-signal {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 9998;
+  pointer-events: none;
+  user-select: none;
+  opacity: 0.24;
+  transition: opacity 280ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.living-signal-label {
+  display: block;
+  font-family: var(--ff-mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--brown);
+  text-transform: uppercase;
+}
+
+/* State-specific subtle adjustments */
+.living-signal[data-state="exploring"] {
+  opacity: 0.32;
+}
+
+.living-signal[data-state="focused"] {
+  opacity: 0.4;
+}
+
+.living-signal[data-state="idle"] {
+  opacity: 0.16;
+}
+
+.living-signal[data-state="returning"] {
+  opacity: 0.48;
+}
+
+/* Reflection Memory — subtle material response */
+.project-card[style*="--memory-strength"]::after {
+  opacity: calc(0.5 + var(--memory-strength, 0) * 0.15);
+}
+
+/* Intent-aware subtle motion adjustments */
+[data-intent="exploring"] .project-card {
+  transition-duration: calc(var(--dur-l, 860ms) * 0.95);
+}
+
+[data-intent="focused"] .project-card:hover {
+  transition-duration: calc(var(--dur-hover, 380ms) * var(--living-pace, 1));
+}
+
+/* Interaction Fingerprint — pace-based subtle timing */
+[data-pace="fast"] [data-reveal] {
+  transition-duration: calc(var(--dur-l, 860ms) * 0.92);
+}
+
+[data-pace="slow"] [data-reveal] {
+  transition-duration: calc(var(--dur-l, 860ms) * 1.1);
+}
+
+/* Mobile: hide signal, disable visual effects */
+@media (max-width: 768px) {
+  .living-signal {
+    display: none;
+  }
+}
+
+/* Reduced motion: minimal static signal */
+@media (prefers-reduced-motion: reduce) {
+  .living-signal {
+    opacity: 0.12;
+    transition: none;
+  }
+  
+  .living-signal[data-state] {
+    opacity: 0.12;
+  }
+  
+  .project-card[style*="--memory-strength"]::after {
+    opacity: 0.5;
+  }
+}
+
+/* =========================================================================
+   END — LIVING INTERFACE
+   ========================================================================= */
+
+/* =========================================================================
+   ATMOSPHERIC TIME
+   Subtle environmental adjustments based on local time
+   ========================================================================= */
+
+/* BUGFIX: Filter creates stacking context that traps cursor z-index.
+   Apply luminosity to specific elements instead of body to keep cursor on top. */
+
+/* Background luminosity adjustment (extremely subtle) */
+.nav,
+.hero,
+.now,
+.work,
+.about,
+.learning,
+.lab,
+.contact,
+.footer,
+.atmosphere,
+.grain {
+  filter: brightness(var(--atm-bg-lum, 1.0));
+}
+
+/* Glass/material intensity adjustment */
+.project-card::after,
+.btn-ghost::after {
+  opacity: calc(0.5 * var(--atm-glass, 1.0));
+}
+
+/* Shadow depth adjustment (very subtle) */
+.project-card,
+.btn-cta {
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, calc(0.04 * var(--atm-shadow, 1.0))),
+    0 4px 12px rgba(0, 0, 0, calc(0.06 * var(--atm-shadow, 1.0)));
+}
+
+/* Motion energy (affects reveal timing subtly) */
+[data-reveal] {
+  transition-duration: calc(var(--dur-l) * var(--atm-motion, 1.0));
+}
+
+/* Atmosphere opacity applied directly via JS to .atmosphere element */
+
+/* Period-specific fine adjustments (optional, very subtle) */
+[data-atm-period="morning"] .atmosphere::before,
+[data-atm-period="morning"] .atmosphere::after {
+  filter: blur(180px) brightness(0.98);
+}
+
+[data-atm-period="evening"] .atmosphere::before,
+[data-atm-period="evening"] .atmosphere::after {
+  filter: blur(180px) brightness(1.02);
+}
+
+[data-atm-period="night"] .atmosphere::before,
+[data-atm-period="night"] .atmosphere::after {
+  filter: blur(180px) brightness(1.03) saturate(1.04);
+}
+
+/* Mobile: reduce effect intensity */
+@media (max-width: 768px) {
+  .nav,
+  .hero,
+  .now,
+  .work,
+  .about,
+  .learning,
+  .lab,
+  .contact,
+  .footer,
+  .atmosphere,
+  .grain {
+    filter: brightness(var(--atm-bg-lum, 1.0));
+  }
+  
+  [data-atm-period] .atmosphere::before,
+  [data-atm-period] .atmosphere::after {
+    filter: blur(180px) brightness(1.0) !important;
+  }
+}
+
+/* Reduced motion: disable atmospheric changes */
+@media (prefers-reduced-motion: reduce) {
+  .nav,
+  .hero,
+  .now,
+  .work,
+  .about,
+  .learning,
+  .lab,
+  .contact,
+  .footer,
+  .atmosphere,
+  .grain {
+    filter: none !important;
+  }
+  
+  .atmosphere {
+    opacity: 1.0 !important;
+  }
+  
+  [data-atm-period] .atmosphere::before,
+  [data-atm-period] .atmosphere::after {
+    filter: blur(180px) !important;
+  }
+}
+
+/* =========================================================================
+   END — ATMOSPHERIC TIME
+   ========================================================================= */
+
+/* =========================================================================
+   ATTENTION LENS
+   Subtle visual focus on actively explored areas
+   ========================================================================= */
+
+/* Focused project: subtle emphasis (2-4% increase) */
+.project-card[data-attention-focus="true"] {
+  /* Slightly stronger material depth */
+  transform: translateY(-1px);
+  transition: transform 800ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.project-card[data-attention-focus="true"]::after {
+  /* Glass reflection slightly more visible */
+  opacity: calc(0.5 + var(--attention-strength, 0) * 0.04);
+}
+
+.project-card[data-attention-focus="true"] .project-title {
+  /* Typography slightly clearer */
+  opacity: calc(1.0 + var(--attention-strength, 0) * 0.03);
+}
+
+.project-card[data-attention-focus="true"] .project-preview {
+  /* Image slightly sharper */
+  filter: contrast(calc(1.0 + var(--attention-strength, 0) * 0.02));
+}
+
+/* Surrounding content: very subtle dimming (1-2% max) */
+:root[style*="--attention-active"] .project-card:not([data-attention-focus="true"]) {
+  opacity: calc(1.0 - var(--attention-dim, 0));
+  transition: opacity 600ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+:root[style*="--attention-active"] .hero,
+:root[style*="--attention-active"] .nav,
+:root[style*="--attention-active"] .lab,
+:root[style*="--attention-active"] .footer {
+  opacity: calc(1.0 - var(--attention-dim, 0) * 0.5);
+  transition: opacity 600ms cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+/* Never reduce readability */
+.project-card[data-attention-focus="true"] *,
+:root[style*="--attention-active"] * {
+  /* Text contrast always preserved */
+  color: inherit;
+}
+
+/* Mobile: disable effect */
+@media (max-width: 768px) {
+  .project-card[data-attention-focus="true"] {
+    transform: none;
+  }
+  
+  .project-card[data-attention-focus="true"]::after {
+    opacity: 0.5;
+  }
+  
+  :root[style*="--attention-active"] .project-card:not([data-attention-focus="true"]) {
+    opacity: 1.0 !important;
+  }
+  
+  :root[style*="--attention-active"] .hero,
+  :root[style*="--attention-active"] .nav,
+  :root[style*="--attention-active"] .lab,
+  :root[style*="--attention-active"] .footer {
+    opacity: 1.0 !important;
+  }
+}
+
+/* Reduced motion: disable transitions */
+@media (prefers-reduced-motion: reduce) {
+  .project-card[data-attention-focus="true"] {
+    transform: none;
+    transition: none;
+  }
+  
+  .project-card[data-attention-focus="true"]::after,
+  .project-card[data-attention-focus="true"] .project-title,
+  .project-card[data-attention-focus="true"] .project-preview {
+    opacity: 1.0;
+    filter: none;
+    transition: none;
+  }
+  
+  :root[style*="--attention-active"] .project-card:not([data-attention-focus="true"]),
+  :root[style*="--attention-active"] .hero,
+  :root[style*="--attention-active"] .nav,
+  :root[style*="--attention-active"] .lab,
+  :root[style*="--attention-active"] .footer {
+    opacity: 1.0 !important;
+    transition: none;
+  }
+}
+
+/* =========================================================================
+   END — ATTENTION LENS
+   ========================================================================= */
+
 </style>
 </head>
 <body>
@@ -3704,6 +4373,44 @@ const SELF_ASSESSMENT = [
     let confirmed = false;
     let rafId = null;
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // DEBUG INSTRUMENTATION — TEMPORARY
+    // ═══════════════════════════════════════════════════════════════════════
+    let debugInterval = null;
+    
+    // Debug cursor state every 500ms when enabled
+    window.__enableCursorDebug = () => {
+      console.log('🔍 CURSOR DEBUG ENABLED — Check console during scroll');
+      debugInterval = setInterval(() => {
+        const computedStyle = window.getComputedStyle(cursor);
+        const htmlClasses = document.documentElement.className;
+        const cursorClasses = cursor.className;
+        
+        console.group(`🎯 Cursor State`);
+        console.log('RAF Active:', rafId !== null);
+        console.log('Position:', { mouseX, mouseY, curX, curY });
+        console.log('Confirmed:', confirmed);
+        console.log('HTML Classes:', htmlClasses);
+        console.log('has-fine-pointer:', document.documentElement.classList.contains('has-fine-pointer'));
+        console.log('Cursor Classes:', cursorClasses);
+        console.log('Computed Opacity:', computedStyle.opacity);
+        console.log('Computed Visibility:', computedStyle.visibility);
+        console.log('Computed Display:', computedStyle.display);
+        console.log('Computed Transform:', computedStyle.transform);
+        console.log('Inline Style:', cursor.getAttribute('style'));
+        console.groupEnd();
+      }, 500);
+    };
+    
+    window.__disableCursorDebug = () => {
+      if (debugInterval) {
+        clearInterval(debugInterval);
+        debugInterval = null;
+        console.log('🔍 CURSOR DEBUG DISABLED');
+      }
+    };
+    // ═══════════════════════════════════════════════════════════════════════
+
     function raf(timestamp) {
       try {
         // Frame-rate-independent lerp: target ~0.18 factor at 16.67ms (60Hz)
@@ -3912,6 +4619,9 @@ const SELF_ASSESSMENT = [
      ======================================================================= */
   function performNexusSpeedTransition(linkElement, href) {
     try {
+      // Get cursor element reference
+      const cursor = document.getElementById("cursor");
+      
       // Find the project card and preview
       const card = linkElement.closest('.project-card');
       const preview = card ? card.querySelector('.project-preview[data-tag="NEXUS Speed"]') : null;
@@ -3944,6 +4654,12 @@ const SELF_ASSESSMENT = [
       // Fade surrounding content
       document.body.style.transition = 'opacity 420ms cubic-bezier(.16,.84,.44,1)';
       document.body.style.opacity = '0.3';
+      
+      // BUGFIX: Keep cursor visible during transition (cursor is child of body)
+      if (cursor) {
+        cursor.style.opacity = '1';
+        cursor.style.transition = 'none'; // Prevent it from transitioning with body
+      }
 
       // Animate overlay to expand toward viewport
       requestAnimationFrame(() => {
@@ -3969,6 +4685,13 @@ const SELF_ASSESSMENT = [
         setTimeout(() => {
           document.body.style.opacity = '';
           document.body.style.transition = '';
+          
+          // BUGFIX: Restore cursor normal behavior
+          if (cursor) {
+            cursor.style.opacity = '';
+            cursor.style.transition = '';
+          }
+          
           if (overlay.parentNode) {
             overlay.remove();
           }
@@ -4309,15 +5032,7 @@ const SELF_ASSESSMENT = [
       }, 1500);
     }
 
-    window.addEventListener('scroll', () => {
-      clearTimeout(scrollSampleTimeout);
-      scrollSampleTimeout = setTimeout(sampleScrollBehavior, SCROLL_SAMPLE_INTERVAL);
-    }, { passive: true });
-
-    // ═══════════════════════════════════════════════════════════════════════
     // PROJECT MEMORY — track which projects were explored
-    // ═══════════════════════════════════════════════════════════════════════
-    
     document.querySelectorAll('.project-link, .project-preview').forEach(link => {
       link.addEventListener('click', () => {
         const card = link.closest('.project-card');
@@ -4495,6 +5210,850 @@ const SELF_ASSESSMENT = [
   /* =======================================================================
      END EXPERIMENT — ADAPTIVE WEBSITE MEMORY
      ======================================================================= */
+
+  /* =======================================================================
+     LIVING INTERFACE
+     
+     Four connected systems making the website quietly responsive to
+     how it is being explored.
+     
+     1. INTENT-AWARE INTERFACE: Detects current interaction intent
+     2. REFLECTION MEMORY: Extended glass material with interaction memory
+     3. INTERACTION FINGERPRINT: Local session-level interaction profile
+     4. SIGNAL SYSTEM: Subtle state indication
+     ======================================================================= */
+  function setupLivingInterface() {
+    if (!('sessionStorage' in window)) return;
+
+    const STORAGE_KEY = 'aasif_session_memory';
+    const root = document.documentElement;
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // SYSTEM 1: INTENT-AWARE INTERFACE
+    // Detects current interaction intent from immediate context
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const IntentEngine = {
+      currentIntent: 'ready',  // ready | exploring | focused | idle
+      lastScrollTime: Date.now(),
+      lastPointerTime: 0,
+      hoverStartTime: 0,
+      isHovering: false,
+      
+      detect() {
+        const now = Date.now();
+        const timeSinceScroll = now - this.lastScrollTime;
+        const timeSincePointer = now - this.lastPointerTime;
+        const hoverDuration = this.isHovering ? now - this.hoverStartTime : 0;
+        
+        // IDLE: No activity for 3+ seconds
+        if (timeSinceScroll > 3000 && timeSincePointer > 3000) {
+          return 'idle';
+        }
+        
+        // FOCUSED: Hovering over interactive element for 800ms+
+        if (this.isHovering && hoverDuration > 800) {
+          return 'focused';
+        }
+        
+        // EXPLORING: Recent scroll activity
+        if (timeSinceScroll < 1500) {
+          return 'exploring';
+        }
+        
+        // READY: Default state
+        return 'ready';
+      },
+      
+      updateIntent() {
+        const newIntent = this.detect();
+        if (newIntent !== this.currentIntent) {
+          this.currentIntent = newIntent;
+          root.setAttribute('data-intent', newIntent);
+          
+          // Update signal system
+          if (window.SignalSystem) {
+            window.SignalSystem.updateState(newIntent);
+          }
+        }
+      },
+      
+      onScroll() {
+        this.lastScrollTime = Date.now();
+        this.updateIntent();
+      },
+      
+      onPointerMove() {
+        this.lastPointerTime = Date.now();
+        this.updateIntent();
+      },
+      
+      onHoverStart() {
+        this.isHovering = true;
+        this.hoverStartTime = Date.now();
+        this.updateIntent();
+      },
+      
+      onHoverEnd() {
+        this.isHovering = false;
+        this.updateIntent();
+      }
+    };
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // SYSTEM 2: REFLECTION MEMORY (Extended Glass Material)
+    // Material retains short visual memory of interaction
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const ReflectionMemory = {
+      activeCards: new Map(),
+      
+      init() {
+        if (!finePointer || reduceMotion) return;
+        
+        const cards = document.querySelectorAll('.project-card');
+        cards.forEach(card => {
+          const state = {
+            lastX: 50,
+            lastY: 50,
+            memoryX: 50,
+            memoryY: 50,
+            memoryStrength: 0,
+            decayRaf: null
+          };
+          
+          this.activeCards.set(card, state);
+          
+          card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = ((e.clientX - rect.left) / rect.width) * 100;
+            const y = ((e.clientY - rect.top) / rect.height) * 100;
+            
+            state.lastX = x;
+            state.lastY = y;
+            state.memoryX = x;
+            state.memoryY = y;
+            state.memoryStrength = 1.0;
+            
+            // Cancel any ongoing decay
+            if (state.decayRaf) {
+              cancelAnimationFrame(state.decayRaf);
+              state.decayRaf = null;
+            }
+          });
+          
+          card.addEventListener('mouseleave', () => {
+            // Start memory decay
+            this.startDecay(card, state);
+          });
+        });
+      },
+      
+      startDecay(card, state) {
+        const startTime = Date.now();
+        const DECAY_DURATION = 1200; // ms - short memory
+        
+        const decay = () => {
+          const elapsed = Date.now() - startTime;
+          const progress = Math.min(elapsed / DECAY_DURATION, 1);
+          
+          // Exponential decay toward center
+          state.memoryStrength = 1 - progress;
+          state.memoryX = state.lastX + (50 - state.lastX) * progress;
+          state.memoryY = state.lastY + (50 - state.lastY) * progress;
+          
+          // Write memory position as CSS variable
+          card.style.setProperty('--memory-x', `${state.memoryX}%`);
+          card.style.setProperty('--memory-y', `${state.memoryY}%`);
+          card.style.setProperty('--memory-strength', state.memoryStrength.toFixed(3));
+          
+          if (progress < 1) {
+            state.decayRaf = requestAnimationFrame(decay);
+          } else {
+            state.decayRaf = null;
+            card.style.removeProperty('--memory-x');
+            card.style.removeProperty('--memory-y');
+            card.style.removeProperty('--memory-strength');
+          }
+        };
+        
+        state.decayRaf = requestAnimationFrame(decay);
+      }
+    };
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // SYSTEM 3: INTERACTION FINGERPRINT
+    // Local session profile influencing motion behavior
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const InteractionFingerprint = {
+      profile: {
+        explorationPace: 'moderate',    // slow | moderate | fast
+        interactionDepth: 'surface',    // surface | engaged | deep
+        focusPattern: 'scanning',       // scanning | selective | thorough
+        lastUpdate: Date.now()
+      },
+      
+      init() {
+        try {
+          const stored = sessionStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            const memory = JSON.parse(stored);
+            this.updateProfile(memory);
+          }
+        } catch (err) {
+          console.warn('[living-interface] Failed to load profile:', err);
+        }
+      },
+      
+      updateProfile(memory) {
+        // Exploration pace from scroll behavior
+        if (memory.scrollBehavior && memory.scrollBehavior.avgSpeed) {
+          const speed = memory.scrollBehavior.avgSpeed;
+          if (speed < 0.5) {
+            this.profile.explorationPace = 'slow';
+          } else if (speed > 1.5) {
+            this.profile.explorationPace = 'fast';
+          } else {
+            this.profile.explorationPace = 'moderate';
+          }
+        }
+        
+        // Interaction depth from visited content
+        const projectCount = Object.keys(memory.visitedProjects || {}).length;
+        const sectionCount = Object.keys(memory.visitedSections || {}).length;
+        const totalInteractions = projectCount + sectionCount;
+        
+        if (totalInteractions <= 2) {
+          this.profile.interactionDepth = 'surface';
+        } else if (totalInteractions <= 5) {
+          this.profile.interactionDepth = 'engaged';
+        } else {
+          this.profile.interactionDepth = 'deep';
+        }
+        
+        // Focus pattern from pause count and reversals
+        if (memory.scrollBehavior) {
+          const pauseCount = memory.scrollBehavior.pauseCount || 0;
+          const reversals = memory.scrollBehavior.reversals || 0;
+          
+          if (pauseCount > 5 && reversals > 3) {
+            this.profile.focusPattern = 'thorough';
+          } else if (pauseCount > 2 || reversals > 1) {
+            this.profile.focusPattern = 'selective';
+          } else {
+            this.profile.focusPattern = 'scanning';
+          }
+        }
+        
+        this.profile.lastUpdate = Date.now();
+        this.applyProfile();
+      },
+      
+      applyProfile() {
+        // Subtle motion adjustments based on profile
+        // Fast explorers: slightly tighter transitions
+        // Slow explorers: slightly more breathing room
+        
+        const paceMultiplier = {
+          slow: 1.1,      // 10% slower/calmer
+          moderate: 1.0,  // baseline
+          fast: 0.92      // 8% tighter
+        }[this.profile.explorationPace] || 1.0;
+        
+        root.style.setProperty('--living-pace', paceMultiplier.toFixed(3));
+        root.setAttribute('data-pace', this.profile.explorationPace);
+        root.setAttribute('data-depth', this.profile.interactionDepth);
+        root.setAttribute('data-focus', this.profile.focusPattern);
+      },
+      
+      getProfile() {
+        return this.profile;
+      }
+    };
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // SYSTEM 4: SIGNAL SYSTEM
+    // Subtle editorial state indication
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    window.SignalSystem = {
+      element: null,
+      currentState: 'ready',
+      stateLabels: {
+        ready: 'READY',
+        exploring: 'EXPLORING',
+        focused: 'FOCUSED',
+        idle: 'IDLE',
+        returning: 'RETURNING'
+      },
+      
+      init() {
+        // Create minimal signal element
+        this.element = document.createElement('div');
+        this.element.className = 'living-signal';
+        this.element.setAttribute('aria-hidden', 'true');
+        
+        const label = document.createElement('span');
+        label.className = 'living-signal-label';
+        label.textContent = this.stateLabels.ready;
+        
+        this.element.appendChild(label);
+        document.body.appendChild(this.element);
+        
+        // Detect returning visitor
+        const wasIdle = sessionStorage.getItem('living_was_idle') === 'true';
+        if (wasIdle) {
+          this.updateState('returning');
+          sessionStorage.removeItem('living_was_idle');
+          
+          // Transition back to ready after brief moment
+          setTimeout(() => {
+            this.updateState('ready');
+          }, 2000);
+        }
+      },
+      
+      updateState(newState) {
+        if (newState === this.currentState) return;
+        
+        const label = this.element.querySelector('.living-signal-label');
+        if (!label) return;
+        
+        // Store idle state for next session
+        if (newState === 'idle') {
+          sessionStorage.setItem('living_was_idle', 'true');
+        }
+        
+        // Subtle transition
+        this.element.style.opacity = '0';
+        
+        setTimeout(() => {
+          this.currentState = newState;
+          label.textContent = this.stateLabels[newState] || this.stateLabels.ready;
+          this.element.setAttribute('data-state', newState);
+          this.element.style.opacity = '';
+        }, 180);
+      },
+      
+      hide() {
+        if (this.element) {
+          this.element.style.display = 'none';
+        }
+      }
+    };
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // INITIALIZATION & CONNECTION
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    if (reduceMotion) {
+      // Minimal version for reduced motion
+      root.setAttribute('data-intent', 'ready');
+      return;
+    }
+    
+    // Initialize all systems
+    InteractionFingerprint.init();
+    ReflectionMemory.init();
+    SignalSystem.init();
+    
+    // Set initial intent
+    IntentEngine.updateIntent();
+    
+    // Consolidated scroll handler for Living Interface (intent engine + interaction fingerprint)
+    let intentScrollTimeout;
+    let fingerprintScrollTimeout;
+    window.addEventListener('scroll', () => {
+      // Intent engine update (immediate)
+      IntentEngine.onScroll();
+      
+      // Interaction fingerprint sampling (debounced 150ms) - consolidated from line ~4681
+      clearTimeout(fingerprintScrollTimeout);
+      fingerprintScrollTimeout = setTimeout(sampleScrollBehavior, SCROLL_SAMPLE_INTERVAL);
+      
+      // Fingerprint profile update (debounced 2000ms)
+      clearTimeout(intentScrollTimeout);
+      intentScrollTimeout = setTimeout(() => {
+        try {
+          const stored = sessionStorage.getItem(STORAGE_KEY);
+          if (stored) {
+            InteractionFingerprint.updateProfile(JSON.parse(stored));
+          }
+        } catch (err) {
+          // Silent fail
+        }
+      }, 2000);
+    }, { passive: true });
+    
+    // Connect pointer events to intent engine
+    if (finePointer) {
+      let pointerTimeout;
+      document.addEventListener('pointermove', () => {
+        clearTimeout(pointerTimeout);
+        pointerTimeout = setTimeout(() => {
+          IntentEngine.onPointerMove();
+        }, 100);
+      }, { passive: true });
+      
+      // Track hover on interactive elements
+      const interactiveElements = document.querySelectorAll(
+        '.project-card, .btn-ghost, .btn-cta, a[href]'
+      );
+      
+      interactiveElements.forEach(el => {
+        el.addEventListener('mouseenter', () => IntentEngine.onHoverStart());
+        el.addEventListener('mouseleave', () => IntentEngine.onHoverEnd());
+      });
+    }
+    
+    // Periodic intent update
+    setInterval(() => {
+      IntentEngine.updateIntent();
+    }, 1000);
+    
+    // Debug helper (localhost only)
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      window.__debugLivingInterface = () => {
+        console.group('🌐 Living Interface State');
+        console.log('Intent:', IntentEngine.currentIntent);
+        console.log('Profile:', InteractionFingerprint.getProfile());
+        console.log('Signal:', SignalSystem.currentState);
+        console.log('Reflection Memory Cards:', ReflectionMemory.activeCards.size);
+        console.groupEnd();
+      };
+    }
+  }
+
+  try {
+    setupLivingInterface();
+  } catch (err) {
+    console.error('[aasif] living interface setup failed:', err);
+  }
+
+  /* =======================================================================
+     ATMOSPHERIC TIME
+     
+     Subtle environmental layer responding to local time of day.
+     Four periods: Morning (5-12), Afternoon (12-17), Evening (17-21), Night (21-5)
+     
+     Maximum adjustments: 2-7% from baseline
+     Continuous interpolation between periods (no abrupt switches)
+     ======================================================================= */
+  function setupAtmosphericTime() {
+    if (reduceMotion) return; // Skip for reduced-motion users
+    
+    const root = document.documentElement;
+    const atmosphere = document.querySelector('.atmosphere');
+    if (!atmosphere) return;
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // TIME PERIODS & ATMOSPHERIC PROFILES
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const PERIODS = {
+      morning: {
+        start: 5,
+        end: 12,
+        profile: {
+          atmosphereOpacity: 0.97,    // 3% lighter (cleaner)
+          bgLuminosity: 1.01,          // 1% brighter (fresh)
+          glassIntensity: 0.96,        // 4% softer (calm)
+          shadowDepth: 0.95,           // 5% lighter shadows
+          motionEnergy: 0.98           // 2% calmer
+        }
+      },
+      afternoon: {
+        start: 12,
+        end: 17,
+        profile: {
+          atmosphereOpacity: 1.0,      // Baseline (reference state)
+          bgLuminosity: 1.0,
+          glassIntensity: 1.0,
+          shadowDepth: 1.0,
+          motionEnergy: 1.0
+        }
+      },
+      evening: {
+        start: 17,
+        end: 21,
+        profile: {
+          atmosphereOpacity: 1.03,     // 3% richer
+          bgLuminosity: 0.985,         // 1.5% deeper
+          glassIntensity: 1.02,        // 2% more depth
+          shadowDepth: 1.04,           // 4% deeper shadows
+          motionEnergy: 1.02           // 2% more cinematic
+        }
+      },
+      night: {
+        start: 21,
+        end: 5,  // Wraps to next day
+        profile: {
+          atmosphereOpacity: 1.05,     // 5% deeper
+          bgLuminosity: 0.975,         // 2.5% deeper (still light)
+          glassIntensity: 0.94,        // 6% softer (quieter)
+          shadowDepth: 1.06,           // 6% deeper shadows
+          motionEnergy: 0.96           // 4% calmer
+        }
+      }
+    };
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // TIME DETECTION & INTERPOLATION
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    function getCurrentHour() {
+      return new Date().getHours() + (new Date().getMinutes() / 60);
+    }
+    
+    function getPeriodForHour(hour) {
+      if (hour >= 5 && hour < 12) return 'morning';
+      if (hour >= 12 && hour < 17) return 'afternoon';
+      if (hour >= 17 && hour < 21) return 'evening';
+      return 'night'; // 21-5 (wraps)
+    }
+    
+    function getAdjacentPeriod(currentPeriod, hour) {
+      // Determine which adjacent period to blend toward
+      if (currentPeriod === 'morning') {
+        return hour < 8.5 ? 'night' : 'afternoon';
+      }
+      if (currentPeriod === 'afternoon') {
+        return hour < 14.5 ? 'morning' : 'evening';
+      }
+      if (currentPeriod === 'evening') {
+        return hour < 19 ? 'afternoon' : 'night';
+      }
+      // night
+      return hour < 2 ? 'evening' : 'morning';
+    }
+    
+    function getBlendFactor(hour, period) {
+      // Calculate smooth blend factor within period
+      const periodData = PERIODS[period];
+      const start = periodData.start;
+      let end = periodData.end;
+      
+      // Handle night wrap (21-5)
+      if (period === 'night') {
+        if (hour >= 21) {
+          // 21-24
+          return (hour - 21) / 8; // 8 hours total (21-5)
+        } else {
+          // 0-5
+          return ((hour + 24) - 21) / 8;
+        }
+      }
+      
+      const duration = end - start;
+      const progress = (hour - start) / duration;
+      
+      // Ease in/out for smoother transitions
+      const eased = progress < 0.5 
+        ? 2 * progress * progress 
+        : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+      
+      return Math.max(0, Math.min(1, eased));
+    }
+    
+    function interpolateProfiles(profile1, profile2, factor) {
+      const result = {};
+      for (const key in profile1) {
+        result[key] = profile1[key] + (profile2[key] - profile1[key]) * factor;
+      }
+      return result;
+    }
+    
+    function getCurrentAtmosphere() {
+      const hour = getCurrentHour();
+      const currentPeriod = getPeriodForHour(hour);
+      const adjacentPeriod = getAdjacentPeriod(currentPeriod, hour);
+      const blendFactor = getBlendFactor(hour, currentPeriod);
+      
+      // Interpolate between current and adjacent period
+      const currentProfile = PERIODS[currentPeriod].profile;
+      const adjacentProfile = PERIODS[adjacentPeriod].profile;
+      
+      return interpolateProfiles(currentProfile, adjacentProfile, blendFactor);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // ATMOSPHERIC APPLICATION
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    function applyAtmosphere(profile) {
+      // Atmosphere layer opacity
+      atmosphere.style.opacity = profile.atmosphereOpacity.toFixed(3);
+      
+      // CSS variables for global adjustments
+      root.style.setProperty('--atm-bg-lum', profile.bgLuminosity.toFixed(4));
+      root.style.setProperty('--atm-glass', profile.glassIntensity.toFixed(3));
+      root.style.setProperty('--atm-shadow', profile.shadowDepth.toFixed(3));
+      root.style.setProperty('--atm-motion', profile.motionEnergy.toFixed(3));
+      
+      // Store current period for debugging
+      const hour = getCurrentHour();
+      const period = getPeriodForHour(hour);
+      root.setAttribute('data-atm-period', period);
+    }
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // INITIALIZATION & UPDATE LOOP
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    function updateAtmosphere() {
+      const profile = getCurrentAtmosphere();
+      applyAtmosphere(profile);
+    }
+    
+    // Initial application
+    updateAtmosphere();
+    
+    // Update every 2 minutes (efficient, user won't notice delay)
+    const UPDATE_INTERVAL = 2 * 60 * 1000; // 2 minutes
+    setInterval(updateAtmosphere, UPDATE_INTERVAL);
+    
+    // Debug helper (localhost only)
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      window.__debugAtmosphericTime = () => {
+        const hour = getCurrentHour();
+        const period = getPeriodForHour(hour);
+        const profile = getCurrentAtmosphere();
+        
+        console.group('🌅 Atmospheric Time');
+        console.log('Local Time:', new Date().toLocaleTimeString());
+        console.log('Hour (decimal):', hour.toFixed(2));
+        console.log('Period:', period);
+        console.log('Profile:', profile);
+        console.groupEnd();
+      };
+      
+      // Test function to preview all periods
+      window.__testAtmosphericTime = (testHour) => {
+        const originalGetHour = getCurrentHour;
+        getCurrentHour = () => testHour;
+        updateAtmosphere();
+        console.log(`🕐 Testing hour ${testHour} (${getPeriodForHour(testHour)})`);
+        getCurrentHour = originalGetHour;
+      };
+    }
+  }
+
+  try {
+    setupAtmosphericTime();
+  } catch (err) {
+    console.error('[aasif] atmospheric time setup failed:', err);
+  }
+
+  /* =======================================================================
+     ATTENTION LENS
+     
+     Subtle visual focus system that enhances the area being actively explored.
+     Reuses Intent-Aware Interface and Interaction Fingerprint signals.
+     
+     Maximum emphasis: 2-4% visual presence increase
+     Surrounding dimming: 1-3% maximum (never hide content)
+     ======================================================================= */
+  function setupAttentionLens() {
+    if (reduceMotion) return; // Skip for reduced-motion users
+    if (!('IntersectionObserver' in window)) return;
+    
+    const root = document.documentElement;
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // ATTENTION DETECTION
+    // Infers attention from viewport position + interaction context
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const AttentionTracker = {
+      focusedElement: null,
+      focusStrength: 0,
+      focusStartTime: 0,
+      dwellThreshold: 600, // ms - must dwell to activate focus
+      
+      // Track which projects are in viewport
+      visibleProjects: new Set(),
+      
+      // Current interaction context (from Intent-Aware)
+      get currentIntent() {
+        return root.getAttribute('data-intent') || 'ready';
+      },
+      
+      // Current exploration pace (from Interaction Fingerprint)
+      get currentPace() {
+        return root.getAttribute('data-pace') || 'moderate';
+      },
+      
+      detectFocus() {
+        // If user is scrolling fast, no focus
+        if (this.currentIntent === 'exploring') {
+          this.clearFocus();
+          return;
+        }
+        
+        // If idle, clear focus
+        if (this.currentIntent === 'idle') {
+          this.clearFocus();
+          return;
+        }
+        
+        // If only one project visible and user is paused/focused
+        if (this.visibleProjects.size === 1 && 
+            (this.currentIntent === 'focused' || this.currentIntent === 'ready')) {
+          
+          const element = Array.from(this.visibleProjects)[0];
+          
+          // Check dwell threshold
+          if (this.focusedElement === element) {
+            const dwellTime = Date.now() - this.focusStartTime;
+            if (dwellTime > this.dwellThreshold) {
+              // Gradually increase focus strength
+              this.focusStrength = Math.min(this.focusStrength + 0.05, 1.0);
+              this.applyFocus();
+            }
+          } else {
+            // New element, start dwell timer
+            this.focusedElement = element;
+            this.focusStartTime = Date.now();
+            this.focusStrength = 0;
+          }
+        } else {
+          // Multiple elements or wrong intent
+          this.clearFocus();
+        }
+      },
+      
+      applyFocus() {
+        if (!this.focusedElement || this.focusStrength === 0) return;
+        
+        // Adjust intensity based on exploration pace
+        let intensity = this.focusStrength;
+        if (this.currentPace === 'fast') {
+          intensity *= 0.5; // Weaker for fast explorers
+        } else if (this.currentPace === 'slow') {
+          intensity *= 1.2; // Slightly stronger for slow explorers
+        }
+        intensity = Math.min(intensity, 1.0);
+        
+        // Apply focus attribute and strength
+        this.focusedElement.setAttribute('data-attention-focus', 'true');
+        this.focusedElement.style.setProperty('--attention-strength', intensity.toFixed(3));
+        
+        // Apply surrounding dim to root
+        root.style.setProperty('--attention-active', '1');
+        root.style.setProperty('--attention-dim', (0.02 * intensity).toFixed(3)); // Max 2% dim
+      },
+      
+      clearFocus() {
+        if (this.focusedElement) {
+          // Gradual fade out
+          const fadeOut = () => {
+            this.focusStrength = Math.max(this.focusStrength - 0.1, 0);
+            
+            if (this.focusStrength > 0) {
+              this.applyFocus();
+              requestAnimationFrame(fadeOut);
+            } else {
+              // Complete removal
+              if (this.focusedElement) {
+                this.focusedElement.removeAttribute('data-attention-focus');
+                this.focusedElement.style.removeProperty('--attention-strength');
+              }
+              root.style.removeProperty('--attention-active');
+              root.style.removeProperty('--attention-dim');
+              this.focusedElement = null;
+            }
+          };
+          requestAnimationFrame(fadeOut);
+        }
+        
+        this.focusedElement = null;
+        this.focusStrength = 0;
+      },
+      
+      markVisible(element) {
+        this.visibleProjects.add(element);
+      },
+      
+      markHidden(element) {
+        this.visibleProjects.delete(element);
+        if (this.focusedElement === element) {
+          this.clearFocus();
+        }
+      }
+    };
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // VIEWPORT TRACKING
+    // Track which project cards are currently visible
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    const projectCards = document.querySelectorAll('.project-card');
+    if (!projectCards.length) return;
+    
+    const visibilityObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          // At least 40% visible
+          AttentionTracker.markVisible(entry.target);
+        } else {
+          AttentionTracker.markHidden(entry.target);
+        }
+      });
+      
+      // Re-evaluate focus after visibility changes
+      AttentionTracker.detectFocus();
+    }, {
+      threshold: 0.4, // 40% of element must be visible
+      rootMargin: '-10% 0px -10% 0px' // Ignore top/bottom edges
+    });
+    
+    projectCards.forEach(card => visibilityObserver.observe(card));
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // CONTINUOUS DETECTION LOOP
+    // Re-evaluate focus periodically (when intent/pace might change)
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    setInterval(() => {
+      AttentionTracker.detectFocus();
+    }, 500); // Check twice per second
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // SCROLL CANCELLATION
+    // Clear focus immediately when user scrolls
+    // ═══════════════════════════════════════════════════════════════════════
+    
+    let scrollClearTimeout;
+    window.addEventListener('scroll', () => {
+      // Don't clear immediately (allow settling)
+      clearTimeout(scrollClearTimeout);
+      scrollClearTimeout = setTimeout(() => {
+        if (AttentionTracker.currentIntent === 'exploring') {
+          AttentionTracker.clearFocus();
+        }
+      }, 200);
+    }, { passive: true });
+    
+    // Debug helper (localhost only)
+    if (location.hostname === 'localhost' || location.hostname === '127.0.0.1') {
+      window.__debugAttentionLens = () => {
+        console.group('🔍 Attention Lens');
+        console.log('Focused Element:', AttentionTracker.focusedElement);
+        console.log('Focus Strength:', AttentionTracker.focusStrength.toFixed(3));
+        console.log('Visible Projects:', AttentionTracker.visibleProjects.size);
+        console.log('Current Intent:', AttentionTracker.currentIntent);
+        console.log('Current Pace:', AttentionTracker.currentPace);
+        console.groupEnd();
+      };
+    }
+  }
+
+  try {
+    setupAttentionLens();
+  } catch (err) {
+    console.error('[aasif] attention lens setup failed:', err);
+  }
 
   /* ======================================================================= 
      END EDITORIAL PAGE TRANSITION
