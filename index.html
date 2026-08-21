@@ -694,6 +694,18 @@ a:focus-visible, button:focus-visible{
 .has-fine-pointer{ cursor: none; }
 .has-fine-pointer a, .has-fine-pointer button{ cursor: none; }
 
+/* Touch mode: subtle response (not continuous tracking) */
+.cursor.is-touch-mode{
+  opacity: 0; /* Hidden until touch */
+  transition: opacity 180ms var(--ease); /* Smooth fade in/out */
+}
+.cursor.is-touch-active{
+  width: 14px; height: 14px;
+  margin: -7px 0 0 -7px;
+  background: var(--mauve);
+  border-color: var(--mauve);
+}
+
 .cursor.is-active{
   width: 14px; height: 14px;
   margin: -7px 0 0 -7px;
@@ -4403,7 +4415,10 @@ const SELF_ASSESSMENT = [
   }
 
   /* =======================================================================
-     CUSTOM CURSOR (desktop / fine pointer only)
+     CUSTOM CURSOR
+     
+     Desktop: smooth RAF-lerped cursor following mouse with state changes
+     Mobile: subtle touch-response indicator at tap location (no tracking)
 
      Safety: the native cursor is NOT hidden up front. It only gets hidden
      once the first real mousemove confirms the custom cursor is actually
@@ -4412,16 +4427,30 @@ const SELF_ASSESSMENT = [
 
      Efficiency: the follow loop only ticks while it still has meaningful
      distance to close, and stops once it settles — no idle rAF churn.
+     
+     Touch: On touch devices, shows brief response at tap point without
+     following finger (preserves native scrolling). Uses existing cursor
+     element for consistency.
      ======================================================================= */
   function setupCursor() {
     const cursor = document.getElementById("cursor");
     if (!cursor) return;
 
-    if (!finePointer) {
-      cursor.style.display = "none";
-      return;
+    // Desktop: fine pointer with hover support
+    if (finePointer) {
+      setupDesktopCursor(cursor);
+    } 
+    // Mobile: touch-native response (no continuous tracking)
+    else if ('ontouchstart' in window) {
+      setupTouchResponse(cursor);
     }
+    // Fallback: hide cursor if neither applies
+    else {
+      cursor.style.display = "none";
+    }
+  }
 
+  function setupDesktopCursor(cursor) {
     const label = cursor.querySelector(".cursor-label");
 
     let mouseX = window.innerWidth / 2;
@@ -4517,6 +4546,65 @@ const SELF_ASSESSMENT = [
       });
       el.addEventListener("mouseleave", () => cursor.classList.remove("is-view"));
     });
+  }
+
+  function setupTouchResponse(cursor) {
+    // Touch-native: brief visual response at tap location
+    // Does NOT track finger (preserves native scrolling)
+    // Does NOT prevent default (preserves all native behavior)
+    
+    if (reduceMotion) {
+      cursor.style.display = "none";
+      return;
+    }
+
+    cursor.style.opacity = "1"; // Always visible when responding
+    cursor.classList.add("is-touch-mode");
+    
+    let hideTimeout = null;
+
+    // Show subtle response at touch location
+    function showTouchResponse(x, y, isInteractive = false) {
+      clearTimeout(hideTimeout);
+      
+      // Position at touch point (no lerp, instant)
+      cursor.style.transform = `translate(${x}px, ${y}px)`;
+      
+      // Visual state
+      if (isInteractive) {
+        cursor.classList.add("is-touch-active");
+      } else {
+        cursor.classList.remove("is-touch-active");
+      }
+      
+      // Brief appearance, then fade
+      cursor.style.opacity = "1";
+      hideTimeout = setTimeout(() => {
+        cursor.style.opacity = "0";
+        cursor.classList.remove("is-touch-active");
+      }, 400); // Brief 400ms response
+    }
+
+    // Listen to touchstart on interactive elements only
+    document.querySelectorAll("a, button, [data-cursor-active], [data-cursor-view]").forEach((el) => {
+      el.addEventListener("touchstart", (e) => {
+        // Don't interfere with multi-touch or scrolling
+        if (e.touches.length !== 1) return;
+        
+        const touch = e.touches[0];
+        showTouchResponse(touch.clientX, touch.clientY, true);
+      }, { passive: true }); // passive = won't prevent scrolling
+    });
+
+    // General page taps (non-interactive areas) - very subtle
+    document.addEventListener("touchstart", (e) => {
+      // Only single touch, and only if not on an interactive element
+      if (e.touches.length !== 1) return;
+      if (e.target.closest("a, button, [data-cursor-active], [data-cursor-view]")) return;
+      
+      const touch = e.touches[0];
+      showTouchResponse(touch.clientX, touch.clientY, false);
+    }, { passive: true });
   }
   try {
     setupCursor();
