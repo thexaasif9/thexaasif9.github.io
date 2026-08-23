@@ -444,6 +444,10 @@ END DOCUMENTATION — Last Updated: 2026-08-21
   /* ── MOTION ──────────────────────────────────────────── */
   --ease:          cubic-bezier(.16,.84,.44,1);  /* Signature deceleration  */
   --ease-out-expo: cubic-bezier(.19,1,.22,1);    /* Cinematic long exit      */
+  --ease-in-out:   cubic-bezier(.45,0,.15,1);    /* Smooth bidirectional     */
+  --ease-out-quad: cubic-bezier(.25,.46,.45,.94);/* Gentle deceleration      */
+  --ease-in-quad:  cubic-bezier(.55,.085,.68,.53);/* Gentle acceleration     */
+  --ease-spring:   cubic-bezier(.34,1.56,.64,1); /* Subtle overshoot (micro) */
   --dur-xs:        120ms;  /* Instant feedback                             */
   --dur-s:         200ms;  /* Micro-interactions                           */
   --dur-m:         480ms;  /* Component transitions                        */
@@ -763,13 +767,14 @@ a:focus-visible, button:focus-visible{
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.5rem 0.85rem 0.5rem 0.7rem;
+  gap: 0.5rem;
+  padding: 0.35rem 0.65rem 0.35rem 0.5rem;
   background: rgba(240, 230, 219, 0.48);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(145, 118, 110, 0.18);
+  border: 1px solid rgba(145, 118, 110, 0.16);
   border-radius: 999px;
+  font-size: 0.7rem;
   transition: background var(--dur-s) var(--ease),
               border-color var(--dur-s) var(--ease),
               transform var(--dur-s) var(--ease);
@@ -787,8 +792,8 @@ a:focus-visible, button:focus-visible{
 }
 
 .availability-indicator{
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--accent);
   position: relative;
@@ -823,9 +828,9 @@ a:focus-visible, button:focus-visible{
 
 .availability-text{
   display: flex;
-  flex-direction: column;
-  gap: 0.05rem;
-  line-height: 1.1;
+  align-items: center;
+  gap: 0;
+  line-height: 1;
 }
 
 .availability-label{
@@ -834,6 +839,7 @@ a:focus-visible, button:focus-visible{
   letter-spacing: 0.12em;
   color: var(--muted);
   text-transform: uppercase;
+  display: none; /* Hidden for compact design */
 }
 
 .availability-status{
@@ -984,6 +990,422 @@ a:focus-visible, button:focus-visible{
 
 /* =========================================================================
    END EXPERIMENT — ADMIN AVAILABILITY SYSTEM
+   ========================================================================= */
+
+/* =========================================================================
+   MEMBERSHIP SYSTEM — Subtle community layer
+   ========================================================================= */
+.membership-container{
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 1.75rem;
+  margin-bottom: 2.25rem;
+}
+
+.member-count{
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.85rem;
+  background: rgba(246, 236, 227, 0.38);
+  border: 1px solid rgba(145, 118, 110, 0.16);
+  border-radius: 100px;
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.08em;
+  font-weight: 500;
+  color: var(--muted);
+  transition: background var(--dur-s) var(--ease),
+              border-color var(--dur-s) var(--ease),
+              color var(--dur-s) var(--ease);
+  user-select: none;
+}
+
+.member-count::before{
+  content: '●';
+  font-size: 0.5rem;
+  color: rgba(145, 118, 110, 0.5);
+}
+
+.member-count:hover{
+  background: rgba(240, 230, 219, 0.52);
+  border-color: rgba(145, 118, 110, 0.24);
+  color: var(--ink);
+}
+
+.btn-member{
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.65rem 1.35rem 0.65rem 1.5rem;
+  background: rgba(246, 236, 227, 0.52);
+  backdrop-filter: blur(10px) saturate(1.08);
+  -webkit-backdrop-filter: blur(10px) saturate(1.08);
+  border: 1px solid rgba(145, 118, 110, 0.3);
+  border-radius: 100px;
+  font-family: var(--f-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+  color: var(--ink);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--dur-s) var(--ease),
+              border-color var(--dur-s) var(--ease),
+              transform var(--dur-s) var(--ease),
+              box-shadow var(--dur-s) var(--ease);
+  user-select: none;
+}
+
+.btn-member-arrow{
+  font-size: 0.85rem;
+  opacity: 0.6;
+  transition: transform var(--dur-s) var(--ease),
+              opacity var(--dur-s) var(--ease);
+}
+
+.btn-member:hover{
+  background: rgba(240, 230, 219, 0.72);
+  border-color: rgba(145, 118, 110, 0.48);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px -2px rgba(145, 118, 110, 0.16);
+}
+
+.btn-member:hover .btn-member-arrow{
+  transform: translateX(3px);
+  opacity: 0.9;
+}
+
+.btn-member:active{
+  transform: translateY(0px);
+}
+
+/* Membership Modal */
+.member-modal{
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--dur-m) var(--ease),
+              visibility var(--dur-m) var(--ease);
+}
+
+.member-modal.is-open{
+  opacity: 1;
+  visibility: visible;
+}
+
+.member-panel{
+  position: relative;
+  width: 90%;
+  max-width: 440px;
+  padding: 2.5rem 2rem 2rem;
+  background: rgba(246, 236, 227, 0.98);
+  backdrop-filter: blur(16px) saturate(1.1);
+  -webkit-backdrop-filter: blur(16px) saturate(1.1);
+  border: 1px solid rgba(145, 118, 110, 0.24);
+  border-radius: 8px;
+  box-shadow: 0 20px 60px -12px rgba(0, 0, 0, 0.25),
+              0 0 0 1px rgba(145, 118, 110, 0.12);
+  transform: translateY(20px);
+  transition: transform var(--dur-m) var(--ease);
+}
+
+.member-modal.is-open .member-panel{
+  transform: translateY(0);
+}
+
+.member-close{
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid rgba(145, 118, 110, 0.2);
+  border-radius: 50%;
+  color: var(--muted);
+  font-size: 1.2rem;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--dur-s) var(--ease),
+              border-color var(--dur-s) var(--ease),
+              color var(--dur-s) var(--ease);
+}
+
+.member-close:hover{
+  background: rgba(145, 118, 110, 0.08);
+  border-color: rgba(145, 118, 110, 0.32);
+  color: var(--ink);
+}
+
+.member-title{
+  font-family: var(--f-display);
+  font-size: 1.5rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin-bottom: 0.75rem;
+}
+
+.member-desc{
+  font-family: var(--f-body);
+  font-size: 0.92rem;
+  line-height: 1.6;
+  color: var(--muted);
+  margin-bottom: 2rem;
+}
+
+.member-form{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.member-input{
+  width: 100%;
+  padding: 0.85rem 1rem;
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(145, 118, 110, 0.2);
+  border-radius: 6px;
+  font-family: var(--f-body);
+  font-size: 0.92rem;
+  color: var(--ink);
+  transition: border-color var(--dur-s) var(--ease),
+              background var(--dur-s) var(--ease);
+}
+
+.member-input::placeholder{
+  color: var(--muted);
+  opacity: 0.6;
+}
+
+.member-input:focus{
+  outline: none;
+  border-color: rgba(145, 118, 110, 0.42);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.member-submit{
+  padding: 0.9rem 1.8rem;
+  background: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 6px;
+  font-family: var(--f-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.1em;
+  font-weight: 600;
+  color: var(--page-bg);
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background var(--dur-s) var(--ease),
+              transform var(--dur-s) var(--ease),
+              box-shadow var(--dur-s) var(--ease);
+  align-self: flex-end;
+}
+
+.member-submit:hover{
+  background: rgba(33, 29, 28, 0.92);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.25);
+}
+
+.member-submit:active{
+  transform: translateY(-1px);
+}
+
+.member-footer{
+  margin-top: 1.25rem;
+  font-family: var(--f-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  text-align: center;
+  opacity: 0.7;
+}
+
+/* Success State */
+.member-success{
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.member-success-title{
+  font-family: var(--f-display);
+  font-size: 1.8rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+  color: var(--ink);
+  margin-bottom: 0.5rem;
+}
+
+.member-success-desc{
+  font-family: var(--f-body);
+  font-size: 0.96rem;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px){
+  .membership-container{
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.65rem;
+    margin-top: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  
+  .member-count{
+    justify-content: center;
+  }
+  
+  .btn-member{
+    justify-content: center;
+  }
+}
+
+@media (max-width: 640px){
+  .member-panel{
+    padding: 2rem 1.5rem 1.75rem;
+  }
+  
+  .member-title{
+    font-size: 1.3rem;
+  }
+  
+  .member-submit{
+    width: 100%;
+    align-self: stretch;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce){
+  .member-modal,
+  .member-panel,
+  .btn-member,
+  .btn-member-arrow,
+  .member-count{
+    transition: opacity var(--dur-s) var(--ease),
+                visibility var(--dur-s) var(--ease) !important;
+    transform: none !important;
+  }
+}
+
+/* =========================================================================
+   END MEMBERSHIP SYSTEM
+   ========================================================================= */
+
+/* =========================================================================
+   AASIF SITE SYSTEM — Subtle section-aware system marker (System 02)
+   ========================================================================= */
+.aasif-system{
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.15rem;
+  font-family: var(--f-mono);
+  font-size: 0.64rem;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  opacity: 0.35;
+  transition: opacity var(--dur-s) var(--ease);
+  pointer-events: none;
+  user-select: none;
+}
+
+.aasif-system:hover{
+  opacity: 0.65;
+}
+
+.aasif-system-line{
+  transition: opacity 240ms var(--ease),
+              transform 240ms var(--ease);
+}
+
+.aasif-system[data-transitioning="true"] .aasif-system-line{
+  opacity: 0;
+  transform: translateY(-3px);
+}
+
+/* Mobile: reposition to avoid overlaps */
+@media (max-width: 768px){
+  .aasif-system{
+    bottom: 1.5rem;
+    right: 1.5rem;
+    font-size: 0.6rem;
+    opacity: 0.25;
+  }
+}
+
+/* Very small screens: hide to prevent overlap */
+@media (max-width: 480px){
+  .aasif-system{
+    display: none;
+  }
+}
+
+/* Reduced motion: static */
+@media (prefers-reduced-motion: reduce){
+  .aasif-system-line{
+    transition: opacity var(--dur-s) var(--ease) !important;
+    transform: none !important;
+  }
+}
+
+/* =========================================================================
+   END AASIF SITE SYSTEM
+   ========================================================================= */
+
+/* =========================================================================
+   PROJECT DNA SYSTEM (System 05) — Personality-driven atmospheres
+   ========================================================================= */
+
+/* DNA-based atmosphere shifts when project is active */
+[data-active-dna="nexus"] {
+  --dna-accent: rgba(145, 118, 110, 0.15);
+  --dna-atmosphere: 0.995; /* Precision - slightly cleaner */
+}
+
+[data-active-dna="dark-file"] {
+  --dna-accent: rgba(145, 118, 110, 0.18);
+  --dna-atmosphere: 0.985; /* Mystery - slightly deeper */
+}
+
+[data-active-dna="deadcore"] {
+  --dna-accent: rgba(145, 118, 110, 0.12);
+  --dna-atmosphere: 0.98; /* Experimental - atmospheric */
+}
+
+/* Apply DNA atmosphere subtly */
+[data-active-dna] .atmosphere {
+  filter: brightness(var(--dna-atmosphere, 1.0));
+  transition: filter 600ms cubic-bezier(.16,.84,.44,1);
+}
+
+/* =========================================================================
+   END PROJECT DNA SYSTEM
    ========================================================================= */
 
 .nav-links{
@@ -1439,16 +1861,17 @@ a:focus-visible, button:focus-visible{
   padding: clamp(2rem, 4vw, 3rem);
   margin-bottom: clamp(1.25rem, 3vw, 2rem);
   isolation: isolate;
-  /* Transition covers BOTH reveal (opacity/transform) and hover states.
-     Two speeds: reveal uses --dur-l for cinematic entry,
-     hover uses --dur-hover for snappy tactile response. */
-  transition: opacity    var(--dur-l)     var(--ease-out-expo),
-              transform  var(--dur-l)     var(--ease-out-expo),
-              translate  var(--dur-hover) var(--ease),
-              scale      var(--dur-hover) var(--ease),
-              border-color var(--dur-m)   var(--ease),
-              background   var(--dur-m)   var(--ease),
-              box-shadow   var(--dur-m)   var(--ease);
+  /* SMOOTH BIDIRECTIONAL TRANSITIONS:
+     - Reveal animations use --dur-l with adaptive timing (620ms-860ms)
+     - Hover uses --dur-hover for instant tactile response
+     - Bidirectional easing for natural forward + reverse flow */
+  transition: opacity    var(--dur-l)     var(--ease-in-out),
+              transform  var(--dur-l)     var(--ease-in-out),
+              translate  var(--dur-hover) var(--ease-out-quad),
+              scale      var(--dur-hover) var(--ease-out-quad),
+              border-color var(--dur-m)   var(--ease-out-quad),
+              background   var(--dur-m)   var(--ease-out-quad),
+              box-shadow   var(--dur-m)   var(--ease-out-quad);
 }
 .project-card:hover{
   translate: 0 -2px;
@@ -2068,16 +2491,16 @@ span.social-link:active{ scale: 1; }
 /* =========================================================================
    GENERAL REVEAL ON SCROLL (non-card elements)
    
-   PERFORMANCE FIX: Reduced flash/pop by:
-   - Lower initial opacity (0.15 vs 0) for smoother fade-in
-   - Smaller transform distance (10px vs 16px)
-   - will-change hints for GPU acceleration
-   - Optimized transition timing
+   SMOOTH BIDIRECTIONAL MOTION:
+   - Entrance: ease-out-expo for cinematic entry
+   - Exit: same curve runs in reverse for natural flow
+   - Motion weight: background elements transition slower
+   - No flash: elements maintain visual continuity during rapid direction changes
    ========================================================================= */
 [data-reveal]{
   will-change: opacity, transform;
-  transition: opacity var(--dur-l) var(--ease-out-expo),
-              transform var(--dur-l) var(--ease-out-expo);
+  transition: opacity var(--dur-l) var(--ease-in-out),
+              transform var(--dur-l) var(--ease-in-out);
 }
 [data-reveal].pre-reveal{
   opacity: 0.15; /* Subtle pre-state, not invisible */
@@ -2086,6 +2509,15 @@ span.social-link:active{ scale: 1; }
 [data-reveal].is-visible{
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Bidirectional smoothing: ease-in-out for natural forward + reverse */
+[data-reveal].is-visible {
+  transition-timing-function: var(--ease-out-expo); /* Entry */
+}
+
+[data-reveal]:not(.is-visible) {
+  transition-timing-function: var(--ease-in-quad); /* Exit */
 }
 
 /* =========================================================================
@@ -3159,6 +3591,233 @@ span.social-link:active{ scale: 1; }
    END — ATTENTION LENS
    ========================================================================= */
 
+/* =========================================================================
+   MOTION REFINEMENT — SMOOTH CINEMATIC ENHANCEMENTS
+   Targeted improvements for fluid, weighted, reversible motion
+   ========================================================================= */
+
+/* Motion Weight Layering: Different elements move at different rates */
+.atmosphere {
+  transition: transform 900ms var(--ease-in-out), /* Slowest - background */
+              filter 600ms var(--ease-in-out),
+              opacity 900ms var(--ease-in-out) !important;
+}
+
+.section-heading,
+.hero-headline {
+  transition: opacity var(--dur-l) var(--ease-out-expo),
+              transform var(--dur-l) var(--ease-out-expo); /* Cinematic */
+}
+
+.project-title {
+  transition: translate var(--dur-hover) var(--ease-out-quad), /* Snappy */
+              opacity var(--dur-m) var(--ease-out-expo),
+              letter-spacing var(--dur-hover) var(--ease-out-quad);
+}
+
+/* Enhanced Button Micro-Interactions */
+.btn-member:active,
+.btn-ghost:active,
+.modal-form-submit:active {
+  transform: translateY(0) scale(0.98);
+  transition-duration: var(--dur-xs) !important;
+}
+
+.btn-member:hover,
+.btn-ghost:hover {
+  transition-timing-function: var(--ease-out-quad);
+}
+
+/* Cursor Smoothness */
+.cursor {
+  transition: transform 140ms var(--ease-out-quad),
+              width 180ms var(--ease-out-quad),
+              height 180ms var(--ease-out-quad),
+              opacity 200ms var(--ease-out-quad);
+}
+
+.cursor-label {
+  transition: opacity 160ms var(--ease-out-quad),
+              transform 160ms var(--ease-out-quad);
+}
+
+/* Project Link Hover: Smooth gap expansion */
+.project-link {
+  transition: color var(--dur-hover) var(--ease-out-quad),
+              border-color var(--dur-hover) var(--ease-out-quad),
+              gap var(--dur-hover) var(--ease-out-expo),
+              scale var(--dur-xs) var(--ease-out-quad);
+}
+
+.project-link .arrow {
+  transition: transform var(--dur-hover) var(--ease-out-quad);
+}
+
+/* AASIF System: Smooth fade */
+.aasif-system-line {
+  transition: opacity 280ms var(--ease-in-out),
+              transform 280ms var(--ease-in-out);
+}
+
+/* Project Handoff: Smoother receding with weight */
+.project-card.is-receding {
+  transition: opacity 720ms var(--ease-in-quad),
+              transform 720ms var(--ease-in-quad),
+              filter 720ms var(--ease-in-quad);
+}
+
+.project-card.is-receding-restore {
+  transition: opacity 480ms var(--ease-out-quad),
+              transform 480ms var(--ease-out-quad),
+              filter 480ms var(--ease-out-quad);
+}
+
+/* Scroll-Stop Settling: Elements gently settle after scroll ends */
+:root[data-scrolling="false"] .project-card.is-visible {
+  transition-duration: 680ms; /* Slightly longer for settling feel */
+  transition-timing-function: var(--ease-out-expo);
+}
+
+:root[data-scrolling="false"] .atmosphere {
+  transition-duration: 1200ms; /* Slowest settle */
+}
+
+/* Fast Scroll Optimization: Shorter transitions during rapid movement */
+:root[data-scroll-direction] .project-card {
+  --dynamic-dur: clamp(420ms, var(--dur-l), 860ms);
+}
+
+/* =========================================================================
+   REDUCED MOTION — SIX-SYSTEM REFINEMENT
+   Disable cursor context, AASIF transitions, DNA atmosphere, scroll effects, handoff
+   ========================================================================= */
+@media (prefers-reduced-motion: reduce) {
+  /* Contextual Cursor: remove expansion/label animation */
+  .cursor {
+    transform: none !important;
+    transition: opacity var(--dur-s) var(--ease) !important;
+  }
+  
+  .cursor-label {
+    opacity: 0 !important; /* Hide contextual labels entirely */
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  /* AASIF Site System: static, no fade transitions */
+  .aasif-system-line {
+    transition: opacity var(--dur-s) var(--ease) !important;
+    transform: none !important;
+  }
+  
+  /* Site Atmosphere: disable section-aware brightness changes */
+  .atmosphere::before,
+  .atmosphere::after {
+    transition: none !important;
+  }
+  
+  :root[data-current-section] {
+    /* Section atmosphere shifts disabled */
+  }
+  
+  /* Project DNA: neutralize atmosphere shifts */
+  :root[data-active-dna="nexus"],
+  :root[data-active-dna="dark-file"],
+  :root[data-active-dna="deadcore"] {
+    --dna-atm-shift: 1.0 !important;
+  }
+  
+  /* Scroll Intelligence: attributes present but no visual effects */
+  :root[data-scrolling="true"],
+  :root[data-scroll-direction] {
+    /* Data attributes exist for logic but no motion applied */
+  }
+  
+  /* Project Handoff: simplified fade only */
+  .project-card.is-receding {
+    opacity: 0.7 !important;
+    transform: none !important;
+    transition: opacity var(--dur-m) var(--ease) !important;
+  }
+  
+  .project-card[data-receding-dna] {
+    /* Residual DNA has no visual effect */
+  }
+}
+
+/* =========================================================================
+   MOBILE OPTIMIZATIONS — SIX-SYSTEM REFINEMENT
+   Disable desktop cursor, reduce AASIF opacity, simplify atmosphere, lighter scroll
+   ========================================================================= */
+@media (max-width: 768px) {
+  /* Contextual Cursor: completely disabled on touch devices */
+  .cursor,
+  .cursor-label {
+    display: none !important;
+  }
+  
+  /* AASIF Site System: reduced opacity, smaller positioning */
+  .aasif-system {
+    opacity: 0.5;
+    right: 12px;
+    bottom: 12px;
+  }
+  
+  .aasif-system-line {
+    font-size: 8.5px;
+    letter-spacing: 0.04em;
+  }
+  
+  /* Hide on very small screens */
+  @media (max-width: 480px) {
+    .aasif-system {
+      display: none;
+    }
+  }
+  
+  /* Site Atmosphere: lighter effects for performance */
+  .atmosphere::before,
+  .atmosphere::after {
+    opacity: 0.6; /* Reduce intensity */
+    filter: blur(120px); /* Less blur = better performance */
+  }
+  
+  /* Project DNA: simplified atmosphere (no dramatic shifts) */
+  :root[data-active-dna] .atmosphere::before,
+  :root[data-active-dna] .atmosphere::after {
+    transition: opacity 600ms var(--ease); /* Faster transition */
+  }
+  
+  /* Scroll Intelligence: lighter implementation */
+  :root[data-scrolling="true"] .project-card {
+    /* Minimal scroll response on mobile */
+  }
+  
+  /* Project Handoff: simplified for mobile */
+  .project-card.is-receding {
+    transition: opacity 300ms var(--ease),
+                transform 300ms var(--ease);
+  }
+  
+  .project-card[data-receding-dna] {
+    /* Faster handoff on mobile */
+    transition: all 300ms var(--ease);
+  }
+}
+
+/* Mobile performance: reduce expensive effects */
+@media (max-width: 768px) and (prefers-reduced-motion: no-preference) {
+  /* Even with motion enabled, be conservative on mobile */
+  .atmosphere::before {
+    will-change: auto; /* Don't force layer promotion */
+  }
+  
+  /* Disable hover effects on touch (they stick) */
+  .project-card:hover {
+    transform: none;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -3180,6 +3839,13 @@ span.social-link:active{ scale: 1; }
 <!-- custom cursor -->
 <div class="cursor" id="cursor" aria-hidden="true">
   <span class="cursor-label"></span>
+</div>
+
+<!-- AASIF Site System (System 02) -->
+<div class="aasif-system" id="aasifSystem" aria-hidden="true">
+  <div class="aasif-system-line" id="aasifCode">AASIF / 001</div>
+  <div class="aasif-system-line" id="aasifSection">ONLINE</div>
+  <div class="aasif-system-line">2026</div>
 </div>
 
 <!-- ============================ NAV ============================ -->
@@ -3251,6 +3917,15 @@ span.social-link:active{ scale: 1; }
       </h1>
 
       <p class="hero-sub" data-reveal>Student · Creator · Experimental Web Developer</p>
+
+      <!-- Membership UI -->
+      <div class="membership-container" data-reveal>
+        <span class="member-count" id="memberCount">187 MEMBERS</span>
+        <button class="btn-member" id="btnMember" data-cursor-active>
+          BECOME A MEMBER
+          <span class="btn-member-arrow">→</span>
+        </button>
+      </div>
 
       <a href="#work" class="btn-ghost" data-reveal data-cursor-view>
         EXPLORE MY WORK <span class="arrow-down">↓</span>
@@ -3998,6 +4673,55 @@ const SELF_ASSESSMENT = [
   }
 
   /* =======================================================================
+     SCROLL INTELLIGENCE COORDINATOR (System 04)
+     
+     Centralized scroll state that other systems can reference.
+     Consolidates existing velocity/direction tracking from setupReveal
+     into a shared state object accessible globally.
+     ======================================================================= */
+  const ScrollIntelligence = {
+    velocity: 0,
+    direction: 0, // 1 = down, -1 = up, 0 = none
+    isScrolling: false,
+    isStopped: true,
+    lastUpdate: Date.now(),
+    
+    update(velocity, direction) {
+      this.velocity = velocity;
+      this.direction = direction;
+      this.isScrolling = velocity > 0.05;
+      this.isStopped = velocity < 0.05;
+      this.lastUpdate = Date.now();
+      
+      // Update root attribute for CSS hooks if needed
+      if (this.isScrolling) {
+        document.documentElement.setAttribute('data-scrolling', 'true');
+        if (direction > 0) {
+          document.documentElement.setAttribute('data-scroll-direction', 'down');
+        } else if (direction < 0) {
+          document.documentElement.setAttribute('data-scroll-direction', 'up');
+        }
+      } else {
+        document.documentElement.removeAttribute('data-scrolling');
+      }
+    },
+    
+    getState() {
+      return {
+        velocity: this.velocity,
+        direction: this.direction,
+        isScrolling: this.isScrolling,
+        isStopped: this.isStopped,
+        // Categorize velocity
+        pace: this.velocity > 1.5 ? 'fast' : this.velocity > 0.5 ? 'normal' : 'slow'
+      };
+    }
+  };
+
+  // Expose globally for other systems
+  window.ScrollIntelligence = ScrollIntelligence;
+
+  /* =======================================================================
      SCROLL REVEAL — everything marked [data-reveal] is visible by default
      (see CSS). This only ADDS a temporary hidden state immediately before
      observing, so a failure here never leaves content invisible. Skill
@@ -4056,23 +4780,51 @@ const SELF_ASSESSMENT = [
     let lastScrollTime = Date.now();
     let velocityCheckTimeout = null;
 
-    const MOMENTUM_DAMPING = 0.93;
-    const MIN_VELOCITY = 0.05;
-    const MAX_SHIFT = 6; // px — atmospheric drift
+    const MOMENTUM_DAMPING = 0.95; // Softer for smoother settle
+    const MIN_VELOCITY = 0.03; // Lower threshold for graceful tail
+    const MAX_SHIFT = 4; // px — reduced for subtlety
     const atmosphere = document.querySelector('.atmosphere');
     
+    // Scroll-stop detection for settling behavior
+    let scrollStopTimeout = null;
+    let isScrolling = false;
+    
+    function markScrolling() {
+      if (!isScrolling) {
+        isScrolling = true;
+        document.documentElement.setAttribute('data-scrolling', 'true');
+      }
+      clearTimeout(scrollStopTimeout);
+    }
+    
+    function markScrollStopped() {
+      scrollStopTimeout = setTimeout(() => {
+        isScrolling = false;
+        document.documentElement.setAttribute('data-scrolling', 'false');
+        // Trigger gentle settle on atmosphere
+        if (atmosphere && scrollVelocity < 0.1) {
+          atmosphere.style.transition = 'transform 1200ms var(--ease-out-expo)';
+          setTimeout(() => {
+            atmosphere.style.transition = '';
+          }, 1200);
+        }
+      }, 150); // 150ms after scroll ends
+    }
+    
     // Scroll continuation parameters
-    const SCROLL_CONTINUATION_ENABLED = !('ontouchstart' in window); // Disable on touch devices
-    const CONTINUATION_DAMPING = 0.88; // Aggressive decay for quick settle
-    const CONTINUATION_MIN_VELOCITY = 0.15; // Minimum velocity to trigger
-    const MAX_CONTINUATION_DISTANCE = 300; // Maximum pixels to continue
+    const SCROLL_CONTINUATION_ENABLED = !('ontouchstart' in window);
+    const CONTINUATION_DAMPING = 0.90; // Softer for smooth settle
+    const CONTINUATION_MIN_VELOCITY = 0.12; // Lower threshold
+    const MAX_CONTINUATION_DISTANCE = 300;
     let continuationVelocity = 0;
     let continuationStartTime = 0;
-    const CONTINUATION_MAX_DURATION = 600; // ms - hard limit
+    const CONTINUATION_MAX_DURATION = 500; // ms - slightly shorter
 
     function applyMomentum(intensity) {
       if (!atmosphere) return;
-      atmosphere.style.transform = `translateY(${intensity * scrollDirection * MAX_SHIFT}px)`;
+      // Smooth ease-out for natural deceleration
+      const easedIntensity = 1 - Math.pow(1 - intensity, 2); // ease-out-quad
+      atmosphere.style.transform = `translateY(${easedIntensity * scrollDirection * MAX_SHIFT}px)`;
     }
 
     function momentumLoop() {
@@ -4088,15 +4840,14 @@ const SELF_ASSESSMENT = [
       momentumRafId = requestAnimationFrame(momentumLoop);
     }
 
-    // Scroll continuation loop
+    // Scroll continuation loop with smoother easing
     function scrollContinuationLoop() {
-      if (!scrollContinuationActive || continuationVelocity < 0.02) {
+      if (!scrollContinuationActive || continuationVelocity < 0.015) {
         scrollContinuationActive = false;
         continuationVelocity = 0;
         return;
       }
       
-      // Hard time limit
       const elapsed = Date.now() - continuationStartTime;
       if (elapsed > CONTINUATION_MAX_DURATION) {
         scrollContinuationActive = false;
@@ -4104,13 +4855,12 @@ const SELF_ASSESSMENT = [
         return;
       }
       
-      // Apply continuation with aggressive damping
       continuationVelocity *= CONTINUATION_DAMPING;
-      const scrollDelta = continuationVelocity * scrollDirection * 16; // px per frame at 60fps
+      const scrollDelta = continuationVelocity * scrollDirection * 16;
       
       window.scrollBy({
         top: scrollDelta,
-        behavior: 'auto' // Instant, not smooth (we control the easing)
+        behavior: 'auto'
       });
       
       requestAnimationFrame(scrollContinuationLoop);
@@ -4140,13 +4890,31 @@ const SELF_ASSESSMENT = [
       const deltaY  = window.scrollY - lastScrollY;
       const deltaT  = now - lastScrollTime || 1;
       
+      markScrolling(); // Mark that scrolling is active
+      markScrollStopped(); // Set timer to detect when it stops
+      
       if (deltaT > 0) {
         const v = Math.abs(deltaY) / deltaT;
         scrollVelocity = scrollVelocity * 0.6 + v * 0.4;
         if (Math.abs(deltaY) > 1) scrollDirection = deltaY > 0 ? 1 : -1;
         
-        // Velocity-adaptive reveal timing (consolidated from experiment system)
-        const dur = Math.round((scrollVelocity > 1.5 ? 780 : 860));
+        // Update Scroll Intelligence coordinator (System 04)
+        if (window.ScrollIntelligence) {
+          window.ScrollIntelligence.update(scrollVelocity, scrollDirection);
+        }
+        
+        // FAST SCROLL OPTIMIZATION: Adaptive timing prevents animation backlog
+        // Fast scroll (>1.8): 620ms - skip intermediate states
+        // Normal scroll (1.0-1.8): 780ms - smooth progression
+        // Slow scroll (<1.0): 860ms - full cinematic timing
+        let dur;
+        if (scrollVelocity > 1.8) {
+          dur = 620; // Fast: prioritize responsiveness
+        } else if (scrollVelocity > 1.0) {
+          dur = 780; // Normal: balanced
+        } else {
+          dur = 860; // Slow: full cinematic
+        }
         document.documentElement.style.setProperty('--dur-l', `${dur}ms`);
         
         // Expose normalized velocity as CSS variable (0-1, consolidated)
@@ -4195,24 +4963,50 @@ const SELF_ASSESSMENT = [
 
     function revealElement(el) {
       if (el.classList.contains('project-card')) {
+        // PROJECT DNA SYSTEM (System 05) — Update active DNA
+        const dnaAttr = el.getAttribute('data-artifact') || el.getAttribute('data-project');
+        if (dnaAttr) {
+          const dnaMap = {
+            'nexus': 'nexus',
+            'nexus-calculator': 'nexus',
+            'nexus-speed': 'nexus',
+            'dark-file': 'dark-file',
+            'the-dark-file': 'dark-file',
+            'deadcore': 'deadcore'
+          };
+          const dna = dnaMap[dnaAttr];
+          if (dna) {
+            document.documentElement.setAttribute('data-active-dna', dna);
+          }
+        }
+        
         // --- HANDOFF: previous card recedes as this one enters -----------
+        // PROJECT HANDOFF (System 06) — Smooth continuous transition
         if (lastVisibleCard && lastVisibleCard !== el) {
+          // Apply DNA-specific receding behavior
+          const prevDna = lastVisibleCard.getAttribute('data-artifact');
+          if (prevDna) {
+            lastVisibleCard.setAttribute('data-receding-dna', prevDna);
+          }
+          
           lastVisibleCard.classList.remove('is-receding-restore');
           lastVisibleCard.classList.add('is-receding');
-          // Auto-restore after the handoff completes
+          
+          // SMOOTH HANDOFF: Restore previous card after new one settles
           clearTimeout(recessTimer);
           recessTimer = setTimeout(() => {
             if (lastVisibleCard) {
               lastVisibleCard.classList.remove('is-receding');
               lastVisibleCard.classList.add('is-receding-restore');
-              // Clean up restore class after it settles
+              // Clean up restore class and DNA residual after gentle restoration
               setTimeout(() => {
                 if (lastVisibleCard) {
                   lastVisibleCard.classList.remove('is-receding-restore');
+                  lastVisibleCard.removeAttribute('data-receding-dna');
                 }
-              }, 520);
+              }, 480); // Slightly faster cleanup for responsiveness
             }
-          }, 900);
+          }, 720); // Reduced from 900ms for tighter handoff
         }
         lastVisibleCard = el;
 
@@ -4461,6 +5255,65 @@ const SELF_ASSESSMENT = [
     let rafId = null;
 
     // ═══════════════════════════════════════════════════════════════════════
+    // CONTEXTUAL CURSOR — System 01
+    // ═══════════════════════════════════════════════════════════════════════
+    function updateCursorContext(target) {
+      if (!label || !target) {
+        cursor.classList.remove("is-active", "is-view");
+        if (label) label.textContent = "";
+        return;
+      }
+
+      // Project cards
+      if (target.closest(".project-card")) {
+        cursor.classList.remove("is-active");
+        cursor.classList.add("is-view");
+        label.textContent = "OPEN";
+        return;
+      }
+
+      // Lab/experiment items
+      if (target.closest(".lab-list .project-card")) {
+        cursor.classList.remove("is-active");
+        cursor.classList.add("is-view");
+        label.textContent = "EXPLORE";
+        return;
+      }
+
+      // Images with data-cursor-view
+      if (target.hasAttribute("data-cursor-view") || target.closest("[data-cursor-view]")) {
+        cursor.classList.remove("is-active");
+        cursor.classList.add("is-view");
+        const viewTarget = target.closest("[data-cursor-view]") || target;
+        label.textContent = viewTarget.getAttribute("data-cursor-label") || "VIEW";
+        return;
+      }
+
+      // Member button
+      if (target.id === "btnMember" || target.closest("#btnMember")) {
+        cursor.classList.add("is-active");
+        cursor.classList.remove("is-view");
+        label.textContent = "JOIN";
+        return;
+      }
+
+      // Generic interactive elements
+      if (target.hasAttribute("data-cursor-active") || 
+          target.closest("[data-cursor-active]") ||
+          target.tagName === "A" ||
+          target.tagName === "BUTTON") {
+        cursor.classList.add("is-active");
+        cursor.classList.remove("is-view");
+        label.textContent = "";
+        return;
+      }
+
+      // Default: clear states
+      cursor.classList.remove("is-active", "is-view");
+      label.textContent = "";
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
     // DEBUG INSTRUMENTATION — TEMPORARY
     // ═══════════════════════════════════════════════════════════════════════
     let debugInterval = null;
@@ -4531,20 +5384,40 @@ const SELF_ASSESSMENT = [
         document.documentElement.classList.add("has-fine-pointer");
       }
       if (rafId === null) rafId = requestAnimationFrame(raf);
+
+      // Update contextual cursor based on target
+      updateCursorContext(e.target);
     });
 
     document.querySelectorAll("[data-cursor-active], a, button").forEach((el) => {
-      el.addEventListener("mouseenter", () => cursor.classList.add("is-active"));
-      el.addEventListener("mouseleave", () => cursor.classList.remove("is-active"));
+      el.addEventListener("mouseenter", (e) => {
+        updateCursorContext(e.target);
+      });
+      el.addEventListener("mouseleave", () => {
+        cursor.classList.remove("is-active");
+        if (label) label.textContent = "";
+      });
     });
 
     document.querySelectorAll("[data-cursor-view]").forEach((el) => {
-      el.addEventListener("mouseenter", () => {
-        cursor.classList.remove("is-active");
-        cursor.classList.add("is-view");
-        if (label) label.textContent = "VIEW";
+      el.addEventListener("mouseenter", (e) => {
+        updateCursorContext(e.target);
       });
-      el.addEventListener("mouseleave", () => cursor.classList.remove("is-view"));
+      el.addEventListener("mouseleave", () => {
+        cursor.classList.remove("is-view");
+        if (label) label.textContent = "";
+      });
+    });
+
+    // Project cards need special handling
+    document.querySelectorAll(".project-card").forEach((card) => {
+      card.addEventListener("mouseenter", (e) => {
+        updateCursorContext(e.target);
+      });
+      card.addEventListener("mouseleave", () => {
+        cursor.classList.remove("is-view");
+        if (label) label.textContent = "";
+      });
     });
   }
 
@@ -5206,10 +6079,56 @@ const SELF_ASSESSMENT = [
     // ═══════════════════════════════════════════════════════════════════════
     
     const sections = document.querySelectorAll('#work, #about, #lab, #contact');
+    
+    // ═══════════════════════════════════════════════════════════════════════
+    // AASIF SITE SYSTEM UPDATE (System 02)
+    // ═══════════════════════════════════════════════════════════════════════
+    const aasifSystem = document.getElementById('aasifSystem');
+    const aasifCode = document.getElementById('aasifCode');
+    const aasifSection = document.getElementById('aasifSection');
+    
+    // Section metadata
+    const sectionMeta = {
+      work: { code: '002', label: 'WORK' },
+      about: { code: '003', label: 'ABOUT' },
+      lab: { code: '004', label: 'EXPERIMENT' },
+      contact: { code: '005', label: 'CONTACT' }
+    };
+    
+    let currentSection = 'home';
+    
+    function updateAasifSystem(sectionId) {
+      if (!aasifSystem || !aasifCode || !aasifSection) return;
+      
+      // Update data-current-section on root for atmosphere (System 03)
+      document.documentElement.setAttribute('data-current-section', sectionId);
+      
+      const meta = sectionMeta[sectionId];
+      if (!meta) {
+        aasifCode.textContent = 'AASIF / 001';
+        aasifSection.textContent = 'ONLINE';
+        return;
+      }
+      
+      aasifSystem.setAttribute('data-transitioning', 'true');
+      setTimeout(() => {
+        aasifCode.textContent = `AASIF / ${meta.code}`;
+        aasifSection.textContent = meta.label;
+        aasifSystem.removeAttribute('data-transitioning');
+      }, 240);
+    }
+    
     const sectionObserver = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
           const sectionId = entry.target.id;
+          
+          // Update AASIF System
+          if (currentSection !== sectionId) {
+            currentSection = sectionId;
+            updateAasifSystem(sectionId);
+          }
+          
           if (!memory.visitedSections[sectionId]) {
             memory.visitedSections[sectionId] = true;
             updateExplorationState(memory);
@@ -5220,6 +6139,18 @@ const SELF_ASSESSMENT = [
     }, { threshold: 0.3 });
 
     sections.forEach(section => sectionObserver.observe(section));
+    
+    // Hero observer for home state
+    const heroSection = document.querySelector('.hero');
+    if (heroSection) {
+      const heroObserver = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && currentSection !== 'home') {
+          currentSection = 'home';
+          updateAasifSystem('home');
+        }
+      }, { threshold: 0.5 });
+      heroObserver.observe(heroSection);
+    }
 
     // ═══════════════════════════════════════════════════════════════════════
     // FOOTER DETECTION — reached bottom of page
@@ -5932,7 +6863,18 @@ const SELF_ASSESSMENT = [
       atmosphere.style.opacity = profile.atmosphereOpacity.toFixed(3);
       
       // CSS variables for global adjustments
-      root.style.setProperty('--atm-bg-lum', profile.bgLuminosity.toFixed(4));
+      let bgLum = profile.bgLuminosity;
+      
+      // Section-aware atmosphere adjustment (System 03)
+      const currentSection = root.getAttribute('data-current-section');
+      if (currentSection) {
+        if (currentSection === 'work') bgLum *= 0.985; // Deeper for focus
+        else if (currentSection === 'lab') bgLum *= 1.005; // Experimental
+        else if (currentSection === 'about') bgLum *= 0.995; // Calmer
+        else if (currentSection === 'contact') bgLum *= 0.98; // Quieter
+      }
+      
+      root.style.setProperty('--atm-bg-lum', bgLum.toFixed(4));
       root.style.setProperty('--atm-glass', profile.glassIntensity.toFixed(3));
       root.style.setProperty('--atm-shadow', profile.shadowDepth.toFixed(3));
       root.style.setProperty('--atm-motion', profile.motionEnergy.toFixed(3));
@@ -6206,5 +7148,143 @@ const SELF_ASSESSMENT = [
      ======================================================================= */
 })();
 </script>
+
+<!-- Membership Modal -->
+<div class="member-modal" id="memberModal" aria-hidden="true" role="dialog" aria-labelledby="memberTitle">
+  <div class="member-panel">
+    <button class="member-close" id="memberClose" aria-label="Close" data-cursor-active>×</button>
+    
+    <div id="memberFormContainer">
+      <h2 class="member-title" id="memberTitle">JOIN THE CIRCLE</h2>
+      <p class="member-desc">A small space for people interested in what I'm building and exploring.</p>
+      
+      <form class="member-form" id="memberForm">
+        <input 
+          type="text" 
+          class="member-input" 
+          id="memberName" 
+          placeholder="Your name" 
+          required 
+          autocomplete="name"
+        />
+        <input 
+          type="email" 
+          class="member-input" 
+          id="memberEmail" 
+          placeholder="Email" 
+          required 
+          autocomplete="email"
+        />
+        <button type="submit" class="member-submit" data-cursor-active>JOIN</button>
+      </form>
+      
+      <p class="member-footer">No spam. Just occasional updates.</p>
+    </div>
+    
+    <div id="memberSuccessContainer" style="display: none;">
+      <div class="member-success">
+        <h2 class="member-success-title">YOU'RE IN.</h2>
+        <p class="member-success-desc">Welcome to the circle.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =======================================================================
+   MEMBERSHIP SYSTEM
+   ======================================================================= */
+(function() {
+  const btnMember = document.getElementById('btnMember');
+  const modal = document.getElementById('memberModal');
+  const closeBtn = document.getElementById('memberClose');
+  const form = document.getElementById('memberForm');
+  const formContainer = document.getElementById('memberFormContainer');
+  const successContainer = document.getElementById('memberSuccessContainer');
+  
+  if (!btnMember || !modal || !closeBtn || !form) return;
+  
+  // Open modal
+  function openModal() {
+    modal.classList.add('is-open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    
+    // Focus first input
+    setTimeout(() => {
+      const firstInput = modal.querySelector('.member-input');
+      if (firstInput) firstInput.focus();
+    }, 300);
+  }
+  
+  // Close modal
+  function closeModal() {
+    modal.classList.remove('is-open');
+    modal.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    
+    // Reset after animation
+    setTimeout(() => {
+      formContainer.style.display = '';
+      successContainer.style.display = 'none';
+      form.reset();
+    }, 400);
+  }
+  
+  // Show success state
+  function showSuccess() {
+    formContainer.style.display = 'none';
+    successContainer.style.display = 'block';
+    
+    // Auto-close after 2.5s
+    setTimeout(() => {
+      closeModal();
+    }, 2500);
+  }
+  
+  // Form submission
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    
+    const name = document.getElementById('memberName').value.trim();
+    const email = document.getElementById('memberEmail').value.trim();
+    
+    // Basic validation
+    if (!name || !email) return;
+    if (!email.includes('@')) return;
+    
+    // DEMO: In production, this would connect to a backend
+    // For now, just show success
+    console.log('[Membership] Demo submission:', { name, email });
+    
+    // Show success
+    showSuccess();
+    
+    // TODO: Replace with real backend call
+    // fetch('/api/members', {
+    //   method: 'POST',
+    //   headers: { 'Content-Type': 'application/json' },
+    //   body: JSON.stringify({ name, email })
+    // });
+  });
+  
+  // Event listeners
+  btnMember.addEventListener('click', openModal);
+  closeBtn.addEventListener('click', closeModal);
+  
+  // Close on background click
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) closeModal();
+  });
+  
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && modal.classList.contains('is-open')) {
+      closeModal();
+    }
+  });
+})();
+</script>
+
 </body>
 </html>
