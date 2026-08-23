@@ -1211,13 +1211,23 @@ a:focus-visible, button:focus-visible{
   font-size: 0.78rem;
   letter-spacing: 0.1em;
   font-weight: 600;
-  color: var(--page-bg);
+  color: var(--bg); /* Fixed: was var(--page-bg) which doesn't exist */
   text-transform: uppercase;
   cursor: pointer;
-  transition: background var(--dur-s) var(--ease),
-              transform var(--dur-s) var(--ease),
-              box-shadow var(--dur-s) var(--ease);
-  align-self: flex-end;
+  transition: background var(--dur-s) var(--ease-out-quad),
+              transform var(--dur-s) var(--ease-out-quad),
+              box-shadow var(--dur-s) var(--ease-out-quad);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.member-submit .arrow {
+  font-size: 0.9rem;
+  transition: transform var(--dur-s) var(--ease-out-quad);
 }
 
 .member-submit:hover{
@@ -1226,8 +1236,23 @@ a:focus-visible, button:focus-visible{
   box-shadow: 0 6px 16px -4px rgba(0, 0, 0, 0.25);
 }
 
+.member-submit:hover .arrow {
+  transform: translateX(2px);
+}
+
 .member-submit:active{
-  transform: translateY(-1px);
+  transform: translateY(-1px) scale(0.98);
+}
+
+.member-submit:disabled,
+.member-submit.is-submitting {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.member-submit.is-submitting {
+  pointer-events: none;
 }
 
 .member-footer{
@@ -7175,7 +7200,9 @@ const SELF_ASSESSMENT = [
           required 
           autocomplete="email"
         />
-        <button type="submit" class="member-submit" data-cursor-active>JOIN</button>
+        <button type="submit" class="member-submit" data-cursor-active>
+          JOIN THE CIRCLE <span class="arrow">→</span>
+        </button>
       </form>
       
       <p class="member-footer">No spam. Just occasional updates.</p>
@@ -7248,23 +7275,50 @@ const SELF_ASSESSMENT = [
     
     const name = document.getElementById('memberName').value.trim();
     const email = document.getElementById('memberEmail').value.trim();
+    const submitBtn = form.querySelector('.member-submit');
     
     // Basic validation
     if (!name || !email) return;
     if (!email.includes('@')) return;
     
-    // DEMO: In production, this would connect to a backend
-    // For now, just show success
-    console.log('[Membership] Demo submission:', { name, email });
+    // Show submitting state
+    if (submitBtn) {
+      submitBtn.classList.add('is-submitting');
+      submitBtn.disabled = true;
+    }
     
-    // Show success
-    showSuccess();
+    // DEMO: In production, this would connect to a backend
+    // Simulate network delay
+    setTimeout(() => {
+      console.log('[Membership] Demo submission:', { name, email });
+      
+      // Remove submitting state
+      if (submitBtn) {
+        submitBtn.classList.remove('is-submitting');
+        submitBtn.disabled = false;
+      }
+      
+      // Show success
+      showSuccess();
+    }, 800);
     
     // TODO: Replace with real backend call
     // fetch('/api/members', {
     //   method: 'POST',
     //   headers: { 'Content-Type': 'application/json' },
     //   body: JSON.stringify({ name, email })
+    // })
+    // .then(res => res.json())
+    // .then(() => {
+    //   submitBtn.classList.remove('is-submitting');
+    //   submitBtn.disabled = false;
+    //   showSuccess();
+    // })
+    // .catch(err => {
+    //   console.error('[Membership] Error:', err);
+    //   submitBtn.classList.remove('is-submitting');
+    //   submitBtn.disabled = false;
+    //   alert('Something went wrong. Please try again.');
     // });
   });
   
