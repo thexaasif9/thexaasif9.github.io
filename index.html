@@ -3894,15 +3894,36 @@ span.social-link:active{ scale: 1; }
       rgba(13, 12, 11, 0.88) 100%
     );
 
-  pointer-events: none; /* Always passthrough — scroll works from frame 0 */
+  pointer-events: auto; /* Receives tap/click */
+  cursor: pointer;
   transition: none;
 
   /* Exit driven by JS via --intro-exit (0→1): overlay fades out */
   opacity: calc(1 - var(--intro-exit, 0));
+  transform: translateY(calc(var(--intro-exit, 0) * -8px));
+}
+
+/* Subtle hover: overlay brightens slightly — communicates interactivity
+   without adding any UI element. Desktop only (hover: hover). */
+@media (hover: hover) {
+  #intro-overlay:hover {
+    background:
+      radial-gradient(ellipse 70% 50% at 50% 50%,
+        rgba(38, 32, 28, 0.78) 0%,
+        rgba(20, 18, 16, 0.86) 100%
+      );
+  }
+}
+
+/* After tap: cursor resets — overlay is exiting, no more interaction */
+#intro-overlay.intro-tapping {
+  cursor: default;
+  pointer-events: none;
 }
 
 #intro-overlay.intro-done {
   visibility: hidden;
+  pointer-events: none;
 }
 
 /* ── AASIF — main title ──────────────────────────────────────────────── */
@@ -4044,6 +4065,7 @@ body.intro-active .hero-headline .line {
   .intro-hint-arrow  { animation: none; }
   #intro-overlay {
     animation: intro-rm-out 350ms cubic-bezier(.16,.84,.44,1) 180ms both;
+    cursor: pointer; /* still tappable under reduced motion */
   }
   body.intro-active .hero-headline .line {
     animation: none !important;
@@ -4062,12 +4084,7 @@ body.intro-active .hero-headline .line {
 }
 
 /* ── Overlay exit: subtle upward lift ────────────────────────────────────
-   --intro-exit (0→1) drives both the opacity (via calc on the element)
-   and a tiny upward translateY. 8px is imperceptible as movement but
-   adds weight — the overlay doesn't just vanish, it lifts away.         */
-#intro-overlay {
-  transform: translateY(calc(var(--intro-exit, 0) * -8px));
-}
+   Now merged into the primary #intro-overlay rule above.                 */
 
 /* ── Hero handoff: nav arrives quietly after headline settles ──────────
    160ms delay means nav fades in after the first headline line is
@@ -7437,13 +7454,15 @@ const SELF_ASSESSMENT = [
 
 <!-- =====================================================================
      OPENING REVEAL ENGINE
-     Reads window.scrollY every rAF frame. Drives two CSS variables:
-       --intro-exit      (0→1): overall overlay opacity  → calc(1 - x)
-       --intro-text-y    (0→N): text translateY in px
-       --intro-text-fade (0→1): text opacity fade
-       --intro-hint-vis  (0→1): hint visibility multiplier
-     NO setTimeout auto-dismiss. Scroll is the only exit trigger.
-     60s safety timeout as absolute last resort only.
+     Two exit paths — both call the same dismiss():
+       1. SCROLL: rAF loop tracks scrollY / REVEAL_PX → rawP 0→1
+       2. TAP/CLICK: pointerup on overlay → dismiss() directly
+
+     Tap path is guarded against accidental activation during scroll:
+     - only fires if the pointer moved < 8px (not a scroll gesture)
+     - only fires if dismissed is still false
+     Both paths call the same dismiss() which resets scrollY to 0,
+     preventing the hero-skip bug.
      ===================================================================== -->
 <script>
 (function () {
@@ -7456,20 +7475,30 @@ const SELF_ASSESSMENT = [
   const root = document.documentElement;
   const body = document.body;
 
-  /* ── Reduced motion: CSS handles a brief fade, JS just cleans up ───── */
+  /* ── Reduced motion path ───────────────────────────────────────────── */
   if (reduceMotion) {
-    const rmTimer = setTimeout(() => {
+    try { body.classList.add('intro-active'); } catch (_) {}
+
+    // Tap still works under reduced motion — simple opacity dismiss
+    overlay.addEventListener('pointerup', () => {
+      if (overlay.classList.contains('intro-done')) return;
+      overlay.classList.add('intro-done');
+      body.classList.remove('intro-active');
+      body.classList.add('intro-done');
+      try { overlay.remove(); } catch (_) {}
+    }, { once: true });
+
+    // CSS @keyframes intro-rm-out handles the visual fade
+    setTimeout(() => {
       overlay.classList.add('intro-done');
       body.classList.remove('intro-active');
       body.classList.add('intro-done');
       try { overlay.remove(); } catch (_) {}
     }, 600);
-    // Still add intro-active so nav hides/restores cleanly
-    try { body.classList.add('intro-active'); } catch (_) {}
     return;
   }
 
-  /* ── Safety: absolute maximum trap time = 60 seconds ──────────────── */
+  /* ── Safety: 60 second absolute trap limit ──────────────────────────── */
   const SAFETY_MS = 60000;
   const safetyTimer = setTimeout(() => dismiss('safety'), SAFETY_MS);
 
@@ -7479,25 +7508,23 @@ const SELF_ASSESSMENT = [
   /* ── State ─────────────────────────────────────────────────────────── */
   let rafId     = null;
   let dismissed = false;
-  let lastRawP  = -1; // force first render
+  let lastRawP  = -1;
 
   /* ── Helpers ────────────────────────────────────────────────────────── */
   function clamp(v, lo, hi) { return v < lo ? lo : v > hi ? hi : v; }
-
-  // Map v from [a,b] → [c,d], clamped
   function remap(v, a, b, c, d) {
     return c + (d - c) * clamp((v - a) / (b - a), 0, 1);
   }
 
-  /* ── Activate: add body class so nav hides ─────────────────────────── */
+  /* ── Activate ───────────────────────────────────────────────────────── */
   try {
     body.classList.add('intro-active');
   } catch (e) {
     clearTimeout(safetyTimer);
-    return; // fail-open: normal site shows
+    return;
   }
 
-  /* ── Dismiss ────────────────────────────────────────────────────────── */
+  /* ── Dismiss — shared by both tap and scroll paths ──────────────────── */
   function dismiss(reason) {
     if (dismissed) return;
     dismissed = true;
@@ -7505,34 +7532,32 @@ const SELF_ASSESSMENT = [
 
     if (rafId) { cancelAnimationFrame(rafId); rafId = null; }
 
-    // Drive all variables to final state
-    root.style.setProperty('--intro-exit',       '1');
-    root.style.setProperty('--intro-text-fade',  '1');
-    root.style.setProperty('--intro-text-y',     '-32');
-    root.style.setProperty('--intro-hint-vis',   '0');
+    // Drive variables to final exit state
+    root.style.setProperty('--intro-exit',      '1');
+    root.style.setProperty('--intro-text-fade', '1');
+    root.style.setProperty('--intro-text-y',    '-32');
+    root.style.setProperty('--intro-hint-vis',  '0');
 
-    // ── HERO SKIP FIX ───────────────────────────────────────────────
-    // The overlay consumed scrollY 0→REVEAL_PX. Without this reset,
-    // the visitor is left at scrollY≈420px — already past the hero.
-    // Snap back to 0 instantly so the hero is the first thing they see.
-    // This is a one-time position correction, not scroll hijacking.
+    // Hero skip fix: reset scroll position to 0.
+    // For tap path: scrollY is already 0, this is a no-op.
+    // For scroll path: scrollY ≈ REVEAL_PX, this resets to hero top.
     window.scrollTo({ top: 0, behavior: 'instant' });
 
-    overlay.classList.add('intro-done');
+    overlay.classList.add('intro-tapping', 'intro-done');
 
     body.classList.remove('intro-active');
     body.classList.add('intro-done');
 
-    // Replay hero headline (was suppressed by body.intro-active rule)
+    // Replay hero headline animation
     requestAnimationFrame(() => {
       const headline = document.querySelector('.hero-headline');
       if (headline) {
         headline.classList.add('headline-replay');
-        void headline.offsetWidth; // force reflow → CSS animation restarts
+        void headline.offsetWidth;
         headline.classList.remove('headline-replay');
       }
 
-      // Kick hero data-reveal elements that are now in view
+      // Kick hero data-reveal elements into view
       setTimeout(() => {
         document.querySelectorAll('.hero [data-reveal]').forEach(el => {
           const r = el.getBoundingClientRect();
@@ -7544,63 +7569,69 @@ const SELF_ASSESSMENT = [
       }, 80);
     });
 
-    // Remove element from DOM after overlay has faded
+    // Clean up CSS variables and remove element from DOM
     setTimeout(() => {
-      [
-        '--intro-exit', '--intro-text-fade', '--intro-text-y', '--intro-hint-vis'
-      ].forEach(p => root.style.removeProperty(p));
+      ['--intro-exit','--intro-text-fade','--intro-text-y','--intro-hint-vis']
+        .forEach(p => root.style.removeProperty(p));
       try { overlay.remove(); } catch (_) {}
-    }, 600);
+    }, 700);
   }
 
-  /* ── Render: called every frame with rawP 0→1 ──────────────────────── */
-  function render(rawP) {
-    // Overall overlay: starts fading at 50% scroll progress
-    const exitP = remap(rawP, 0.45, 1.0, 0, 1);
-    root.style.setProperty('--intro-exit', exitP.toFixed(4));
+  /* ── TAP / CLICK path ───────────────────────────────────────────────── */
+  // Uses pointerup (works for mouse and touch in one handler).
+  // Guards against accidental activation from scroll gestures:
+  //   - records pointerdown position
+  //   - only dismisses if pointer moved < 8px (not a swipe/scroll)
+  let tapStartX = 0;
+  let tapStartY = 0;
 
-    // Text: begins moving up at 25%, gone by 75%
+  overlay.addEventListener('pointerdown', (e) => {
+    tapStartX = e.clientX;
+    tapStartY = e.clientY;
+  }, { passive: true });
+
+  overlay.addEventListener('pointerup', (e) => {
+    if (dismissed) return;
+    const dx = Math.abs(e.clientX - tapStartX);
+    const dy = Math.abs(e.clientY - tapStartY);
+    // Only treat as a tap if pointer barely moved (< 8px in any direction)
+    if (dx > 8 || dy > 8) return;
+    dismiss('tap');
+  }, { passive: true });
+
+  /* ── SCROLL path ────────────────────────────────────────────────────── */
+  function render(rawP) {
+    const exitP    = remap(rawP, 0.45, 1.0, 0, 1);
     const textFade = remap(rawP, 0.25, 0.72, 0, 1);
     const textY    = remap(rawP, 0.25, 0.72, 0, -32);
+    const hintVis  = remap(rawP, 0, 0.08, 1, 0);
+
+    root.style.setProperty('--intro-exit',      exitP.toFixed(4));
     root.style.setProperty('--intro-text-fade', textFade.toFixed(4));
     root.style.setProperty('--intro-text-y',    textY.toFixed(2));
-
-    // Hint: fades out as soon as scrolling begins
-    const hintVis = remap(rawP, 0, 0.08, 1, 0);
-    root.style.setProperty('--intro-hint-vis', hintVis.toFixed(4));
+    root.style.setProperty('--intro-hint-vis',  hintVis.toFixed(4));
   }
 
-  /* ── Tick: rAF loop ─────────────────────────────────────────────────── */
   function tick() {
     if (dismissed) return;
-
     const rawP = clamp(window.scrollY / REVEAL_PX, 0, 1);
-
     if (Math.abs(rawP - lastRawP) > 0.0004) {
       lastRawP = rawP;
       render(rawP);
-
-      if (rawP >= 1) {
-        dismiss('complete');
-        return;
-      }
+      if (rawP >= 1) { dismiss('scroll'); return; }
     }
-
     rafId = requestAnimationFrame(tick);
   }
 
-  // Render initial state once (rawP = 0, text fully visible, veil fully opaque)
   render(0);
-
-  // Start loop — idles cheaply when nothing moves
   rafId = requestAnimationFrame(tick);
 
-  /* ── Keyboard: Space / Enter / ↓ completes the reveal ──────────────── */
+  /* ── Keyboard: Enter / Space / ↓ → scroll to completion ────────────── */
   function onKey(e) {
     if (dismissed) { document.removeEventListener('keydown', onKey); return; }
     if (e.key === ' ' || e.key === 'Enter' || e.key === 'ArrowDown') {
       e.preventDefault();
-      window.scrollTo({ top: REVEAL_PX + 20, behavior: 'smooth' });
+      dismiss('keyboard');
     }
   }
   document.addEventListener('keydown', onKey);
