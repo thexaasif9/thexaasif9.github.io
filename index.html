@@ -2396,7 +2396,6 @@ span.social-link:active{ scale: 1; }
   grid-template-columns: 1.05fr .95fr;
   gap: clamp(2rem, 5vw, 4.5rem);
   align-items: center;
-  will-change: opacity, transform; /* GPU hint */
   /* Card-level transitions: only non-layered properties */
   transition: opacity 700ms cubic-bezier(.19,1,.22,1),
               transform 700ms cubic-bezier(.19,1,.22,1);
@@ -2405,9 +2404,9 @@ span.social-link:active{ scale: 1; }
 /* --- Entry state -------------------------------------------------------- */
 .project-card.pre-reveal{
   opacity: 0.08; /* Subtle pre-state instead of 0 - prevents flash */
-  /* Preview rises from below; info starts a touch lower — corrected in JS */
   transform: translateY(0);
   pointer-events: none;
+  will-change: opacity, transform; /* Promote only while transitioning */
 }
 
 /* --- Fully revealed ----------------------------------------------------- */
@@ -2415,6 +2414,7 @@ span.social-link:active{ scale: 1; }
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+  will-change: auto; /* Release layer once settled */
   /* Reverse transitions: slightly refined for smoother unwinding */
   transition: opacity 520ms cubic-bezier(.16,.84,.44,1),
               transform 520ms cubic-bezier(.16,.84,.44,1);
@@ -2443,16 +2443,21 @@ span.social-link:active{ scale: 1; }
 
 /* --- PREVIEW PANEL: clip-path wipe from bottom (cinematic unmask) ------ */
 .project-preview{
-  will-change: clip-path, transform; /* GPU acceleration */
+  /* will-change only active while animating (pre-reveal state).
+     Released after card becomes visible to avoid permanent layer promotion. */
   clip-path: inset(100% 0 0 0 round 6px);
   transform: translateY(10px); /* Reduced from 14px */
   transition: clip-path 780ms cubic-bezier(.19,1,.22,1),
               transform 780ms cubic-bezier(.19,1,.22,1),
               box-shadow var(--dur-hover) var(--ease);
 }
+.project-card.pre-reveal .project-preview {
+  will-change: clip-path, transform; /* Promote during entry */
+}
 .project-card.is-visible .project-preview{
   clip-path: inset(0% 0 0 0 round 6px);
   transform: translateY(0);
+  will-change: auto; /* Release layer once settled */
   /* Reverse transition: smooth unwinding when scrolling back up */
   transition: clip-path 580ms cubic-bezier(.16,.84,.44,1),
               transform 580ms cubic-bezier(.16,.84,.44,1),
@@ -2480,15 +2485,19 @@ span.social-link:active{ scale: 1; }
 /* --- INFO PANEL: enters slightly after preview, slightly slower --------- */
 /* Achieved via transitionDelay on .project-info in JS */
 .project-info{
-  will-change: opacity, transform; /* GPU acceleration */
+  /* will-change promoted on pre-reveal, released once visible */
   opacity: 0.12; /* Subtle pre-state instead of 0 */
   transform: translateY(8px); /* Reduced from 12px */
   transition: opacity 640ms cubic-bezier(.19,1,.22,1),
               transform 640ms cubic-bezier(.19,1,.22,1);
 }
+.project-card.pre-reveal .project-info {
+  will-change: opacity, transform; /* Promote during entry */
+}
 .project-card.is-visible .project-info{
   opacity: 1;
   transform: translateY(0);
+  will-change: auto; /* Release layer once settled */
   /* Reverse transition: smooth unwinding */
   transition: opacity 480ms cubic-bezier(.16,.84,.44,1),
               transform 480ms cubic-bezier(.16,.84,.44,1);
@@ -2529,29 +2538,21 @@ span.social-link:active{ scale: 1; }
 
 /* =========================================================================
    GENERAL REVEAL ON SCROLL (non-card elements)
-   
-   SMOOTH BIDIRECTIONAL MOTION:
-   - Entrance: ease-out-expo for cinematic entry
-   - Exit: same curve runs in reverse for natural flow
-   - Motion weight: background elements transition slower
-   - No flash: elements maintain visual continuity during rapid direction changes
    ========================================================================= */
 [data-reveal]{
-  will-change: opacity, transform;
+  will-change: auto; /* Promoted only when pre-reveal or transitioning */
   transition: opacity var(--dur-l) var(--ease-in-out),
               transform var(--dur-l) var(--ease-in-out);
 }
 [data-reveal].pre-reveal{
   opacity: 0.15; /* Subtle pre-state, not invisible */
-  transform: translateY(10px); /* Reduced from 16px */
+  transform: translateY(10px);
+  will-change: opacity, transform; /* Promote layer only while transitioning */
 }
 [data-reveal].is-visible{
   opacity: 1;
   transform: translateY(0);
-}
-
-/* Bidirectional smoothing: ease-in-out for natural forward + reverse */
-[data-reveal].is-visible {
+  will-change: auto; /* Release layer after settled */
   transition-timing-function: var(--ease-out-expo); /* Entry */
 }
 
@@ -3711,14 +3712,10 @@ span.social-link:active{ scale: 1; }
               filter 480ms var(--ease-out-quad);
 }
 
-/* Scroll-Stop Settling: Elements gently settle after scroll ends */
-:root[data-scrolling="false"] .project-card.is-visible {
-  transition-duration: 680ms; /* Slightly longer for settling feel */
-  transition-timing-function: var(--ease-out-expo);
-}
-
+/* Scroll-Stop Settling: atmosphere eases to rest after scroll ends.
+   Project cards manage their own transitions via .is-visible state. */
 :root[data-scrolling="false"] .atmosphere {
-  transition-duration: 1200ms; /* Slowest settle */
+  transition-duration: 1200ms; /* Slowest settle — background weight */
 }
 
 /* Fast Scroll Optimization: Shorter transitions during rapid movement */
@@ -4995,17 +4992,15 @@ const SELF_ASSESSMENT = [
       this.isScrolling = velocity > 0.05;
       this.isStopped = velocity < 0.05;
       this.lastUpdate = Date.now();
-      
-      // Update root attribute for CSS hooks if needed
+      // data-scrolling and data-scroll-direction are managed by
+      // markScrolling/markScrollStopped inside setupReveal to avoid
+      // a duplicate-writer race. Only write scroll-direction here.
       if (this.isScrolling) {
-        document.documentElement.setAttribute('data-scrolling', 'true');
         if (direction > 0) {
           document.documentElement.setAttribute('data-scroll-direction', 'down');
         } else if (direction < 0) {
           document.documentElement.setAttribute('data-scroll-direction', 'up');
         }
-      } else {
-        document.documentElement.removeAttribute('data-scrolling');
       }
     },
     
@@ -5077,7 +5072,6 @@ const SELF_ASSESSMENT = [
     let scrollVelocity = 0;
     let scrollDirection = 0;
     let momentumActive = false;
-    let scrollContinuationActive = false;
     let momentumRafId = null;
     let lastScrollY = window.scrollY;
     let lastScrollTime = Date.now();
@@ -5091,7 +5085,37 @@ const SELF_ASSESSMENT = [
     // Scroll-stop detection for settling behavior
     let scrollStopTimeout = null;
     let isScrolling = false;
-    
+
+    function applyMomentum(intensity) {
+      if (!atmosphere) return;
+      // ease-out-quad for natural deceleration
+      const easedIntensity = 1 - Math.pow(1 - intensity, 2);
+      // Set without transition so each rAF frame applies immediately.
+      // The CSS transition on .atmosphere (900ms) would lag every frame
+      // update — this overrides it for the duration of the momentum loop.
+      atmosphere.style.transition = 'none';
+      atmosphere.style.transform = `translateY(${easedIntensity * scrollDirection * MAX_SHIFT}px)`;
+    }
+
+    function momentumLoop() {
+      if (!momentumActive || scrollVelocity < MIN_VELOCITY) {
+        momentumActive = false;
+        scrollVelocity = 0;
+        // Restore CSS transition before settling atmosphere back to 0
+        if (atmosphere) atmosphere.style.transition = '';
+        applyMomentum(0);
+        momentumRafId = null;
+        return;
+      }
+      scrollVelocity *= MOMENTUM_DAMPING;
+      applyMomentum(Math.min(scrollVelocity / 2, 1));
+      momentumRafId = requestAnimationFrame(momentumLoop);
+    }
+
+    // Scroll continuation loop with smoother easing — REMOVED
+    // (was self-defeating: window.scrollBy() triggered scroll listener
+    // which immediately cancelled scrollContinuationActive)
+
     function markScrolling() {
       if (!isScrolling) {
         isScrolling = true;
@@ -5104,88 +5128,17 @@ const SELF_ASSESSMENT = [
       scrollStopTimeout = setTimeout(() => {
         isScrolling = false;
         document.documentElement.setAttribute('data-scrolling', 'false');
-        // Trigger gentle settle on atmosphere
-        if (atmosphere && scrollVelocity < 0.1) {
-          atmosphere.style.transition = 'transform 1200ms var(--ease-out-expo)';
-          setTimeout(() => {
-            atmosphere.style.transition = '';
-          }, 1200);
-        }
-      }, 150); // 150ms after scroll ends
-    }
-    
-    // Scroll continuation parameters
-    const SCROLL_CONTINUATION_ENABLED = !('ontouchstart' in window);
-    const CONTINUATION_DAMPING = 0.90; // Softer for smooth settle
-    const CONTINUATION_MIN_VELOCITY = 0.12; // Lower threshold
-    const MAX_CONTINUATION_DISTANCE = 300;
-    let continuationVelocity = 0;
-    let continuationStartTime = 0;
-    const CONTINUATION_MAX_DURATION = 500; // ms - slightly shorter
-
-    function applyMomentum(intensity) {
-      if (!atmosphere) return;
-      // Smooth ease-out for natural deceleration
-      const easedIntensity = 1 - Math.pow(1 - intensity, 2); // ease-out-quad
-      atmosphere.style.transform = `translateY(${easedIntensity * scrollDirection * MAX_SHIFT}px)`;
+      }, 150);
     }
 
-    function momentumLoop() {
-      if (!momentumActive || scrollVelocity < MIN_VELOCITY) {
-        momentumActive = false;
-        scrollVelocity = 0;
-        applyMomentum(0);
-        momentumRafId = null;
-        return;
-      }
-      scrollVelocity *= MOMENTUM_DAMPING;
-      applyMomentum(Math.min(scrollVelocity / 2, 1));
-      momentumRafId = requestAnimationFrame(momentumLoop);
-    }
-
-    // Scroll continuation loop with smoother easing
-    function scrollContinuationLoop() {
-      if (!scrollContinuationActive || continuationVelocity < 0.015) {
-        scrollContinuationActive = false;
-        continuationVelocity = 0;
-        return;
-      }
-      
-      const elapsed = Date.now() - continuationStartTime;
-      if (elapsed > CONTINUATION_MAX_DURATION) {
-        scrollContinuationActive = false;
-        continuationVelocity = 0;
-        return;
-      }
-      
-      continuationVelocity *= CONTINUATION_DAMPING;
-      const scrollDelta = continuationVelocity * scrollDirection * 16;
-      
-      window.scrollBy({
-        top: scrollDelta,
-        behavior: 'auto'
-      });
-      
-      requestAnimationFrame(scrollContinuationLoop);
-    }
-
+    // Scroll continuation was self-defeating: window.scrollBy() fired the
+    // scroll listener which immediately set scrollContinuationActive = false.
+    // Removed. Native browser momentum (touch) and the atmosphere drift
+    // (momentumLoop) already handle the post-scroll feel on all platforms.
     function startMomentum() {
       if (momentumActive || scrollVelocity < 0.3) return;
       momentumActive = true;
       momentumRafId = requestAnimationFrame(momentumLoop);
-      
-      // Also start scroll continuation if enabled
-      if (SCROLL_CONTINUATION_ENABLED && 
-          !scrollContinuationActive && 
-          scrollVelocity > CONTINUATION_MIN_VELOCITY &&
-          !reduceMotion) {
-        
-        // Cap continuation velocity to prevent excessive distance
-        continuationVelocity = Math.min(scrollVelocity, 4.0);
-        scrollContinuationActive = true;
-        continuationStartTime = Date.now();
-        requestAnimationFrame(scrollContinuationLoop);
-      }
     }
 
     function measureVelocity() {
@@ -5230,19 +5183,12 @@ const SELF_ASSESSMENT = [
     }
 
     window.addEventListener('scroll', () => {
-      // Cancel scroll continuation on any new scroll input
-      if (scrollContinuationActive) {
-        scrollContinuationActive = false;
-        continuationVelocity = 0;
-      }
-      
       if (momentumRafId) { cancelAnimationFrame(momentumRafId); momentumActive = false; }
       clearTimeout(velocityCheckTimeout);
       
       velocityCheckTimeout = setTimeout(() => {
         measureVelocity();
-        // Reset timing and launch momentum after scroll stops
-        document.documentElement.style.setProperty('--dur-l', '860ms');
+        // dur-l was already updated inside measureVelocity() — don't reset it here
         if (!reduceMotion) startMomentum();
       }, 60);
     }, { passive: true });
@@ -5797,16 +5743,38 @@ const SELF_ASSESSMENT = [
     const hero = document.querySelector(".hero");
     if (!headline || !hero) return;
 
-    // Pointer parallax
-    hero.addEventListener("mousemove", (e) => {
-      const rect = hero.getBoundingClientRect();
-      const relX = (e.clientX - rect.left) / rect.width - 0.5;
-      const relY = (e.clientY - rect.top) / rect.height - 0.5;
-      headline.style.transform = `translate(${relX * -8}px, ${relY * -6}px)`;
-    });
-    hero.addEventListener("mouseleave", () => {
-      headline.style.transform = "translate(0, 0)";
-    });
+    // Only activate parallax once the intro is done — prevents conflicting
+    // with the line-settle CSS animation that also uses transform.
+    // If the intro overlay exists, wait for its removal before hooking in.
+    function attachParallax() {
+      hero.addEventListener("mousemove", (e) => {
+        // Don't apply if the headline animation is still running
+        if (headline.classList.contains('headline-replay')) return;
+        const rect = hero.getBoundingClientRect();
+        const relX = (e.clientX - rect.left) / rect.width - 0.5;
+        const relY = (e.clientY - rect.top) / rect.height - 0.5;
+        headline.style.transform = `translate(${relX * -8}px, ${relY * -6}px)`;
+      });
+      hero.addEventListener("mouseleave", () => {
+        headline.style.transform = "translate(0, 0)";
+      });
+    }
+
+    // If intro overlay is present, wait for it to be removed
+    const introOverlay = document.getElementById('intro-overlay');
+    if (introOverlay) {
+      // Use MutationObserver to detect when overlay is removed from DOM
+      const mo = new MutationObserver(() => {
+        if (!document.getElementById('intro-overlay')) {
+          mo.disconnect();
+          // Small delay so line-settle animation has time to complete
+          setTimeout(attachParallax, 1200);
+        }
+      });
+      mo.observe(document.body, { childList: true, subtree: false });
+    } else {
+      attachParallax();
+    }
   }
   try {
     setupParallax();
@@ -7541,6 +7509,8 @@ const SELF_ASSESSMENT = [
     // Hero skip fix: reset scroll position to 0.
     // For tap path: scrollY is already 0, this is a no-op.
     // For scroll path: scrollY ≈ REVEAL_PX, this resets to hero top.
+    // Cancel any active scroll continuation first to avoid a race.
+    if (window.ScrollIntelligence) window.ScrollIntelligence.update(0, 0);
     window.scrollTo({ top: 0, behavior: 'instant' });
 
     overlay.classList.add('intro-tapping', 'intro-done');
